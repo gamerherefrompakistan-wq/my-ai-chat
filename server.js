@@ -83,6 +83,17 @@ async function getOllamaReply(messages) {
   return data?.message?.content || "No response";
 }
 
+// Pollinations validates seed as int32 (max 2147483647). Date.now() is too large.
+const POLLINATIONS_MAX_SEED = 2147483647;
+
+function toPollinationsSeed(value) {
+  const fallback = Date.now() % POLLINATIONS_MAX_SEED;
+  let n = Math.floor(Number(value));
+  if (!Number.isFinite(n)) return fallback;
+  n = Math.abs(n) % POLLINATIONS_MAX_SEED;
+  return n === 0 ? fallback || 1 : n;
+}
+
 function normalizePollinationsKey(raw) {
   if (!raw || typeof raw !== "string") return "";
   let k = raw.trim();
@@ -117,7 +128,7 @@ async function pollinationsGenerateVideo(prompt, opts) {
     typeof opts.model === "string" && opts.model.trim()
       ? opts.model.trim()
       : "wan-fast";
-  const seed = Number(opts.seed) || Date.now();
+  const seed = toPollinationsSeed(opts.seed ?? Date.now());
   const audio =
     opts.audio === true || String(opts.audio || "").toLowerCase() === "true";
 
@@ -182,7 +193,7 @@ app.post("/api/generate-video", async (req, res) => {
         model,
         aspectRatio,
         audio,
-        seed: Date.now()
+        seed: toPollinationsSeed(Date.now())
       });
     } catch (e) {
       if (e.code === "MISSING_POLLINATIONS_KEY") {
