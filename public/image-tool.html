@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt Image Generator</title>
+    <link rel="stylesheet" href="./image-tool.css" />
+  </head>
+  <body>
+    <main class="tool">
+      <header class="head">
+        <h1>Prompt to Image Generator</h1>
+        <a href="./index.html">Back to Chat</a>
+      </header>
+
+      <section class="card">
+        <label for="prompt">Prompt</label>
+        <textarea
+          id="prompt"
+          rows="3"
+          placeholder="e.g. futuristic cafe interior, neon blue lights, cinematic, realistic"
+        ></textarea>
+
+        <div class="row">
+          <div>
+            <label for="width">Width</label>
+            <input id="width" type="number" min="256" max="2048" value="1024" />
+          </div>
+          <div>
+            <label for="height">Height</label>
+            <input id="height" type="number" min="256" max="2048" value="1024" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="generateBtn" type="button">Generate Image</button>
+          <button id="downloadBtn" type="button">Download</button>
+          <button id="copyBtn" type="button">Copy URL</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <p id="status">Prompt likho aur Generate Image dabao.</p>
+        <input id="imageUrl" type="text" readonly placeholder="Generated image URL" />
+        <img id="output" alt="Generated output" />
+      </section>
+    </main>
+
+    <script src="./image-tool.js"></script>
+  </body>
+</html>

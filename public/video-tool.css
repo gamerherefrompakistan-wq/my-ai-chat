@@ -1,0 +1,153 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b1020;
+  color: #eef2ff;
+}
+
+.tool {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.head a {
+  color: #d6e4ff;
+  text-decoration: none;
+  border: 1px solid #334168;
+  background: #101936;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.notice {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #dbeafe;
+  border: 1px solid #334168;
+  background: #101936;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.notice a {
+  color: #93c5fd;
+}
+
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.card {
+  border: 1px solid #25304d;
+  background: #111933;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+textarea,
+input,
+select,
+button {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #334168;
+  background: #0f1630;
+  color: #eef2ff;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.row-full {
+  margin-top: 10px;
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.check input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+button {
+  background: #2f6feb;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#status {
+  margin-top: 0;
+  color: #dbeafe;
+}
+
+#output {
+  width: 100%;
+  margin-top: 12px;
+  border-radius: 12px;
+  border: 1px solid #334168;
+  display: none;
+  background: #000;
+}
+
+@media (max-width: 620px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}

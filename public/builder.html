@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Website Builder Tool</title>
+    <link rel="stylesheet" href="./builder.css" />
+  </head>
+  <body>
+    <main class="builder-app">
+      <header class="builder-header">
+        <h1>Website Builder Tool</h1>
+        <a href="./index.html">Back to Chat</a>
+      </header>
+
+      <section class="grid">
+        <form id="builder-form" class="panel">
+          <h2>Business Details</h2>
+
+          <label>Business Name</label>
+          <input id="businessName" required placeholder="e.g. Gamer Web Studio" />
+
+          <label>Tagline</label>
+          <input id="tagline" placeholder="e.g. Fast websites for small businesses" />
+
+          <label>Business Type</label>
+          <input id="businessType" placeholder="e.g. Digital agency, Restaurant, Salon" />
+
+          <label>Primary Color</label>
+          <input id="primaryColor" type="color" value="#2f6feb" />
+
+          <label>Logo Text</label>
+          <input id="logoText" placeholder="e.g. GWS" />
+
+          <label>Prompt / Theme</label>
+          <textarea
+            id="promptText"
+            rows="3"
+            placeholder="e.g. Modern, trust-based, bold CTA, clean sections"
+          ></textarea>
+
+          <label>Image Prompt</label>
+          <textarea
+            id="imagePrompt"
+            rows="2"
+            placeholder="e.g. modern web agency office, neon blue, professional team, cinematic lighting"
+          ></textarea>
+          <div class="inline-actions">
+            <button id="generateImageBtn" type="button">Generate Hero Image</button>
+          </div>
+          <input id="generatedImageUrl" type="text" readonly placeholder="Generated image URL will appear here" />
+          <img id="imagePreview" class="image-preview" alt="Generated preview" />
+
+          <label>Services (comma separated)</label>
+          <input id="services" placeholder="e.g. Website Design, SEO, Branding" />
+
+          <label>WhatsApp Number</label>
+          <input id="whatsapp" placeholder="e.g. 923001234567" />
+
+          <label>Contact Email</label>
+          <input id="email" placeholder="e.g. hello@business.com" />
+
+          <button type="submit">Generate Website</button>
+        </form>
+
+        <section class="panel">
+          <h2>Live Preview</h2>
+          <iframe id="preview" title="Generated Website Preview"></iframe>
+          <div class="actions">
+            <button id="copyCodeBtn" type="button">Copy HTML</button>
+            <button id="downloadBtn" type="button">Download HTML</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./builder.js"></script>
+  </body>
+</html>

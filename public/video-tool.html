@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prompt to Video Generator</title>
+    <link rel="stylesheet" href="./video-tool.css" />
+  </head>
+  <body>
+    <main class="tool">
+      <header class="head">
+        <h1>Prompt to Video (AI)</h1>
+        <a href="./index.html">Back to Chat</a>
+      </header>
+
+      <section class="notice">
+        Ye tool server se video banwata hai — production / Railway pe
+        <strong>POLLINATIONS_API_KEY</strong> env variable lagani hogi (secret key
+        <span class="mono">sk_...</span> ya publishable
+        <span class="mono">pk_...</span>).
+        Key yahan se: <a href="https://enter.pollinations.ai" target="_blank" rel="noopener">enter.pollinations.ai</a>
+      </section>
+
+      <section class="card">
+        <label for="prompt">Video prompt</label>
+        <textarea
+          id="prompt"
+          rows="4"
+          placeholder="e.g. slow drone shot over futuristic city at sunset, cinematic, 4k look"
+        ></textarea>
+
+        <div class="row">
+          <div>
+            <label for="duration">Duration (seconds)</label>
+            <input id="duration" type="number" min="1" max="10" value="5" />
+          </div>
+          <div>
+            <label for="aspect">Aspect ratio</label>
+            <select id="aspect">
+              <option value="16:9">16:9 (landscape)</option>
+              <option value="9:16">9:16 (shorts / reel)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row-full">
+          <label class="check">
+            <input id="audio" type="checkbox" />
+            <span>Background audio / soundtrack (agar model support kare)</span>
+          </label>
+        </div>
+
+        <div class="row-full">
+          <div>
+            <label for="model">Model</label>
+            <select id="model">
+              <option value="wan-fast">wan-fast (recommended start)</option>
+              <option value="wan">wan</option>
+              <option value="seedance">seedance</option>
+              <option value="ltx-2">ltx-2</option>
+              <option value="p-video">p-video</option>
+              <option value="veo">veo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="generateBtn" type="button">Generate video</button>
+          <button id="downloadBtn" type="button" disabled>Download MP4</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <p id="status">Prompt likho aur Generate video dabao. Pehla request thora waqt leta hai.</p>
+        <video id="output" controls playsinline muted></video>
+      </section>
+    </main>
+
+    <script src="./video-tool.js"></script>
+  </body>
+</html>

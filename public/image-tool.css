@@ -1,0 +1,96 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0b1020;
+  color: #eef2ff;
+}
+
+.tool {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.head h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.head a {
+  color: #d6e4ff;
+  text-decoration: none;
+  border: 1px solid #334168;
+  background: #101936;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.card {
+  border: 1px solid #25304d;
+  background: #111933;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+textarea,
+input,
+button {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #334168;
+  background: #0f1630;
+  color: #eef2ff;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+button {
+  background: #2f6feb;
+  border: none;
+  cursor: pointer;
+}
+
+#output {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid #334168;
+  display: none;
+}
+
+#status {
+  margin-top: 0;
+  color: #dbeafe;
+}

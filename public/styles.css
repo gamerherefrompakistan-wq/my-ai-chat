@@ -20,11 +20,35 @@ body {
 .topbar {
   padding: 16px;
   border-bottom: 1px solid #25304d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .topbar h1 {
   margin: 0;
   font-size: 20px;
+}
+
+.tool-link {
+  color: #d6e4ff;
+  text-decoration: none;
+  border: 1px solid #334168;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: #101936;
+}
+
+.tool-link:hover {
+  background: #16244a;
+}
+
+.top-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .chat {

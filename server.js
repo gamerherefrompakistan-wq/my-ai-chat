@@ -83,6 +83,93 @@ async function getOllamaReply(messages) {
   return data?.message?.content || "No response";
 }
 
+async function pollinationsGenerateVideo(prompt, opts) {
+  const key = process.env.POLLINATIONS_API_KEY;
+  if (!key) {
+    const err = new Error("MISSING_POLLINATIONS_KEY");
+    err.code = "MISSING_POLLINATIONS_KEY";
+    throw err;
+  }
+
+  const duration = Math.min(10, Math.max(1, Number(opts.duration) || 5));
+  const aspectRatio =
+    opts.aspectRatio === "9:16" || opts.aspectRatio === "16:9"
+      ? opts.aspectRatio
+      : "16:9";
+  const model =
+    typeof opts.model === "string" && opts.model.trim()
+      ? opts.model.trim()
+      : "wan-fast";
+  const seed = opts.seed ?? Date.now();
+  const audio =
+    opts.audio === true || String(opts.audio || "").toLowerCase() === "true";
+
+  const url = `https://gen.pollinations.ai/video/${encodeURIComponent(
+    prompt.trim()
+  )}?duration=${duration}&aspectRatio=${encodeURIComponent(aspectRatio)}&model=${encodeURIComponent(
+    model
+  )}&seed=${seed}&audio=${audio ? "true" : "false"}`;
+
+  const upstream = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${key}`
+    }
+  });
+
+  return upstream;
+}
+
+app.post("/api/generate-video", async (req, res) => {
+  try {
+    const { prompt, duration, model, aspectRatio, audio } = req.body || {};
+    if (!prompt || typeof prompt !== "string" || prompt.trim().length < 4) {
+      return res.status(400).json({ error: "Prompt required (at least 4 characters)" });
+    }
+
+    let upstream;
+    try {
+      upstream = await pollinationsGenerateVideo(prompt, {
+        duration,
+        model,
+        aspectRatio,
+        audio,
+        seed: Date.now()
+      });
+    } catch (e) {
+      if (e.code === "MISSING_POLLINATIONS_KEY") {
+        return res.status(503).json({
+          error:
+            "Server par POLLINATIONS_API_KEY set nahi hai. enter.pollinations.ai se free secret key banwao aur Railway/hosting env me lagao.",
+          hint: "https://enter.pollinations.ai"
+        });
+      }
+      throw e;
+    }
+
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      console.error("Pollinations video error:", upstream.status, text);
+      return res.status(502).json({
+        error: `Video generation failed (${upstream.status})`,
+        detail: text.slice(0, 800)
+      });
+    }
+
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Cache-Control", "no-store");
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
+  } catch (error) {
+    console.error("generate-video:", error?.message || error);
+    const message =
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      "Unknown server error";
+    res.status(500).json({ error: message });
+  }
+});
+
 app.post("/api/chat", async (req, res) => {
   try {
     const { messages } = req.body;
@@ -147,6 +234,11 @@ app.post("/api/chat", async (req, res) => {
 });
 
 app.get("*", (req, res) => {
+  // Explicit .html/.css/etc. URLs should NOT fall back to the chat SPA —
+  // otherwise missing deploy files look "broken" (same chat UI on every URL).
+  if (path.extname(req.path)) {
+    return res.status(404).type("text/plain").send("Not found");
+  }
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
