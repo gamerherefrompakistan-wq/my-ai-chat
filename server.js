@@ -1,7 +1,6 @@
 const express = require("express");
 const path = require("path");
 const dotenv = require("dotenv");
-const OpenAI = require("openai");
 
 dotenv.config();
 
@@ -11,14 +10,6 @@ const port = process.env.PORT || 3000;
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-let client = null;
-function getClient() {
-  if (client) return client;
-  if (!process.env.OPENAI_API_KEY) return null;
-  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  return client;
-}
-
 function getLastUserMessage(messages) {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     if (messages[i]?.role === "user") return String(messages[i].content || "");
@@ -27,7 +18,7 @@ function getLastUserMessage(messages) {
 }
 
 function demoReply(userText) {
-  return `Demo mode reply: Aapka message mila - "${userText}". OpenAI quota/billing issue ki wajah se app abhi local demo mode me chal raha hai.`;
+  return `Demo mode reply: Aapka message mila - "${userText}". API key set nahi hai abhi.`;
 }
 
 const ASSISTANT_SYSTEM_PROMPT = `
@@ -49,41 +40,43 @@ function prepareModelMessages(messages) {
     }))
     .filter((msg) => msg.content.length > 0);
 
-  // Keep only recent context for faster local-model responses.
-  const recentMessages = cleanMessages.slice(-8);
-  return [{ role: "system", content: ASSISTANT_SYSTEM_PROMPT }, ...recentMessages];
+  return cleanMessages.slice(-8);
 }
 
-async function getOllamaReply(messages) {
-  const baseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-  const preferredModel = process.env.OLLAMA_MODEL || "llama3.2";
-  const ollamaMessages = prepareModelMessages(messages);
+// ─── CLAUDE API (Anthropic) ───────────────────────────────────────────────────
+async function getClaudeReply(messages) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY not set");
+  }
 
-  const response = await fetch(`${baseUrl}/api/chat`, {
+  const modelMessages = prepareModelMessages(messages);
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json"
+    },
     body: JSON.stringify({
-      model: preferredModel,
-      messages: ollamaMessages,
-      stream: false,
-      options: {
-        temperature: 0.3,
-        num_predict: 220,
-        num_ctx: 2048
-      }
+      model: process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system: ASSISTANT_SYSTEM_PROMPT,
+      messages: modelMessages
     })
   });
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Ollama error: ${response.status} ${err}`);
+    throw new Error(`Claude API error: ${response.status} ${err}`);
   }
 
   const data = await response.json();
-  return data?.message?.content || "No response";
+  return data?.content?.[0]?.text || "No response";
 }
 
-// Pollinations validates seed as int32 (max 2147483647). Date.now() is too large.
+// ─── POLLINATIONS VIDEO ───────────────────────────────────────────────────────
 const POLLINATIONS_MAX_SEED = 2147483647;
 
 function toPollinationsSeed(value) {
@@ -116,9 +109,7 @@ async function pollinationsGenerateVideo(prompt, opts) {
     throw err;
   }
 
-  const cleanPrompt = String(prompt || "")
-    .trim()
-    .replace(/\s+/g, " ");
+  const cleanPrompt = String(prompt || "").trim().replace(/\s+/g, " ");
   const duration = Math.min(10, Math.max(1, Number(opts.duration) || 5));
   const aspectRatio =
     opts.aspectRatio === "9:16" || opts.aspectRatio === "16:9"
@@ -137,24 +128,15 @@ async function pollinationsGenerateVideo(prompt, opts) {
     Accept: "video/mp4,*/*"
   };
 
-  // Prefer POST (prompt body) — long prompts break GET URLs and often return 400.
-  const postBody = {
-    prompt: cleanPrompt,
-    duration,
-    aspectRatio,
-    model,
-    seed,
-    audio
-  };
+  const postBody = { prompt: cleanPrompt, duration, aspectRatio, model, seed, audio };
 
   let upstream = await fetch("https://gen.pollinations.ai/video", {
     method: "POST",
-    headers: {
-      ...authHeaders,
-      "Content-Type": "application/json"
-    },
+    headers: { ...authHeaders, "Content-Type": "application/json" },
     body: JSON.stringify(postBody)
   });
+
+  if (upstream.ok) return upstream;
 
   const maxGetPrompt = 900;
   const shortPrompt =
@@ -162,23 +144,18 @@ async function pollinationsGenerateVideo(prompt, opts) {
       ? `${cleanPrompt.slice(0, maxGetPrompt)}…`
       : cleanPrompt;
 
-  const tryGet = async () => {
-    const url = `https://gen.pollinations.ai/video/${encodeURIComponent(
-      shortPrompt
-    )}?duration=${duration}&aspectRatio=${encodeURIComponent(
-      aspectRatio
-    )}&model=${encodeURIComponent(model)}&seed=${seed}&audio=${
-      audio ? "true" : "false"
-    }&key=${encodeURIComponent(key)}`;
-    return fetch(url, { method: "GET", headers: authHeaders });
-  };
+  const url = `https://gen.pollinations.ai/video/${encodeURIComponent(
+    shortPrompt
+  )}?duration=${duration}&aspectRatio=${encodeURIComponent(
+    aspectRatio
+  )}&model=${encodeURIComponent(model)}&seed=${seed}&audio=${
+    audio ? "true" : "false"
+  }&key=${encodeURIComponent(key)}`;
 
-  if (upstream.ok) return upstream;
-
-  const getRes = await tryGet();
-  return getRes;
+  return fetch(url, { method: "GET", headers: authHeaders });
 }
 
+// ─── ROUTES ───────────────────────────────────────────────────────────────────
 app.post("/api/generate-video", async (req, res) => {
   try {
     const { prompt, duration, model, aspectRatio, audio } = req.body || {};
@@ -189,17 +166,13 @@ app.post("/api/generate-video", async (req, res) => {
     let upstream;
     try {
       upstream = await pollinationsGenerateVideo(prompt, {
-        duration,
-        model,
-        aspectRatio,
-        audio,
+        duration, model, aspectRatio, audio,
         seed: toPollinationsSeed(Date.now())
       });
     } catch (e) {
       if (e.code === "MISSING_POLLINATIONS_KEY") {
         return res.status(503).json({
-          error:
-            "Server par POLLINATIONS_API_KEY set nahi hai. enter.pollinations.ai se free secret key banwao aur Railway/hosting env me lagao.",
+          error: "Server par POLLINATIONS_API_KEY set nahi hai.",
           hint: "https://enter.pollinations.ai"
         });
       }
@@ -221,11 +194,7 @@ app.post("/api/generate-video", async (req, res) => {
     res.send(buf);
   } catch (error) {
     console.error("generate-video:", error?.message || error);
-    const message =
-      error?.response?.data?.error?.message ||
-      error?.message ||
-      "Unknown server error";
-    res.status(500).json({ error: message });
+    res.status(500).json({ error: error?.message || "Unknown server error" });
   }
 });
 
@@ -237,64 +206,20 @@ app.post("/api/chat", async (req, res) => {
     }
 
     const userText = getLastUserMessage(messages);
-    const useOllama = String(process.env.USE_OLLAMA || "").toLowerCase() === "true";
-    const openai = getClient();
-    if (useOllama || !openai) {
-      try {
-        const ollamaText = await getOllamaReply(messages);
-        return res.json({ reply: ollamaText });
-      } catch (error) {
-        console.error("Ollama fallback error:", error?.message || error);
-        return res.json({
-          reply: `Ollama error: ${error?.message || "Unknown Ollama error"}`
-        });
-      }
-    }
 
-    let response;
     try {
-      const modelMessages = prepareModelMessages(messages);
-      response = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-        messages: modelMessages,
-        temperature: 0.4
-      });
-    } catch (apiError) {
-      const statusCode =
-        apiError?.status || apiError?.response?.status || apiError?.code;
-      const quotaMessage = String(apiError?.message || "").toLowerCase();
-      const isQuotaError =
-        statusCode === 429 ||
-        quotaMessage.includes("quota") ||
-        quotaMessage.includes("billing");
-
-      if (isQuotaError) {
-        try {
-          const ollamaText = await getOllamaReply(messages);
-          return res.json({ reply: ollamaText });
-        } catch (_error) {
-          return res.json({
-            reply: demoReply(userText)
-          });
-        }
-      }
-      throw apiError;
+      const reply = await getClaudeReply(messages);
+      return res.json({ reply });
+    } catch (error) {
+      console.error("Claude API error:", error?.message || error);
+      return res.json({ reply: demoReply(userText) });
     }
-
-    const text = response.choices?.[0]?.message?.content || "No response";
-    return res.json({ reply: text });
   } catch (error) {
-    const message =
-      error?.response?.data?.error?.message ||
-      error?.message ||
-      "Unknown server error";
-    return res.status(500).json({ error: message });
+    return res.status(500).json({ error: error?.message || "Unknown server error" });
   }
 });
 
 app.get("*", (req, res) => {
-  // Explicit .html/.css/etc. URLs should NOT fall back to the chat SPA —
-  // otherwise missing deploy files look "broken" (same chat UI on every URL).
   if (path.extname(req.path)) {
     return res.status(404).type("text/plain").send("Not found");
   }
@@ -304,3 +229,4 @@ app.get("*", (req, res) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
+
