@@ -18,62 +18,62 @@ function getLastUserMessage(messages) {
 }
 
 function demoReply(userText) {
-  return `Demo mode reply: Aapka message mila - "${userText}". API key set nahi hai abhi.`;
+  return `Demo mode reply: Aapka message mila - "${userText}". GEMINI_API_KEY set nahi hai abhi.`;
 }
 
-const ASSISTANT_SYSTEM_PROMPT = `
-You are My AI Chat, a helpful multilingual assistant.
+const ASSISTANT_SYSTEM_PROMPT = `You are My AI Chat, a helpful multilingual assistant.
 Rules:
 - Reply in the SAME language/script as the user's latest message.
 - Correct obvious spelling/grammar mistakes in your own response.
 - Keep answers clear, natural, and concise unless user asks for detail.
-- For poems, stories, or creative content, write polished and error-free text.
-`;
+- For poems, stories, or creative content, write polished and error-free text.`;
 
-function prepareModelMessages(messages) {
+function prepareGeminiMessages(messages) {
   const cleanMessages = messages
     .filter((msg) => msg && typeof msg.content === "string")
     .map((msg) => ({
-      role:
-        msg.role === "system" || msg.role === "assistant" ? msg.role : "user",
-      content: String(msg.content).trim()
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: String(msg.content).trim() }]
     }))
-    .filter((msg) => msg.content.length > 0);
+    .filter((msg) => msg.parts[0].text.length > 0);
 
   return cleanMessages.slice(-8);
 }
 
-// ─── CLAUDE API (Anthropic) ───────────────────────────────────────────────────
-async function getClaudeReply(messages) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+// ─── GEMINI API ───────────────────────────────────────────────────────────────
+async function getGeminiReply(messages) {
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY not set");
+    throw new Error("GEMINI_API_KEY not set");
   }
 
-  const modelMessages = prepareModelMessages(messages);
+  const geminiMessages = prepareGeminiMessages(messages);
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      model: process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      system: ASSISTANT_SYSTEM_PROMPT,
-      messages: modelMessages
-    })
-  });
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: ASSISTANT_SYSTEM_PROMPT }]
+        },
+        contents: geminiMessages,
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 1024
+        }
+      })
+    }
+  );
 
   if (!response.ok) {
     const err = await response.text();
-    throw new Error(`Claude API error: ${response.status} ${err}`);
+    throw new Error(`Gemini API error: ${response.status} ${err}`);
   }
 
   const data = await response.json();
-  return data?.content?.[0]?.text || "No response";
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
 }
 
 // ─── POLLINATIONS VIDEO ───────────────────────────────────────────────────────
@@ -208,10 +208,10 @@ app.post("/api/chat", async (req, res) => {
     const userText = getLastUserMessage(messages);
 
     try {
-      const reply = await getClaudeReply(messages);
+      const reply = await getGeminiReply(messages);
       return res.json({ reply });
     } catch (error) {
-      console.error("Claude API error:", error?.message || error);
+      console.error("Gemini API error:", error?.message || error);
       return res.json({ reply: demoReply(userText) });
     }
   } catch (error) {
