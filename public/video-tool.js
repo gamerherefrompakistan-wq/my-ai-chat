@@ -53,7 +53,8 @@ generateBtn.addEventListener("click", async () => {
       try {
         if (contentType.includes("application/json")) {
           const data = await res.json();
-          msg = data.error || data.detail || msg;
+          msg = data.error || msg;
+          if (data.detail) msg += ` — ${data.detail}`;
           if (data.hint) msg += ` — ${data.hint}`;
         } else {
           const t = await res.text();

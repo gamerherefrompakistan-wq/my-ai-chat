@@ -83,14 +83,31 @@ async function getOllamaReply(messages) {
   return data?.message?.content || "No response";
 }
 
+function normalizePollinationsKey(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  let k = raw.trim();
+  if (k.startsWith("Bearer ")) k = k.slice(7).trim();
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+    k = k.slice(1, -1).trim();
+  }
+  const lower = k.toLowerCase();
+  if (lower.startsWith("pollinations_api_key=")) {
+    k = k.slice("pollinations_api_key=".length).trim();
+  }
+  return k;
+}
+
 async function pollinationsGenerateVideo(prompt, opts) {
-  const key = process.env.POLLINATIONS_API_KEY;
+  const key = normalizePollinationsKey(process.env.POLLINATIONS_API_KEY);
   if (!key) {
     const err = new Error("MISSING_POLLINATIONS_KEY");
     err.code = "MISSING_POLLINATIONS_KEY";
     throw err;
   }
 
+  const cleanPrompt = String(prompt || "")
+    .trim()
+    .replace(/\s+/g, " ");
   const duration = Math.min(10, Math.max(1, Number(opts.duration) || 5));
   const aspectRatio =
     opts.aspectRatio === "9:16" || opts.aspectRatio === "16:9"
@@ -100,24 +117,55 @@ async function pollinationsGenerateVideo(prompt, opts) {
     typeof opts.model === "string" && opts.model.trim()
       ? opts.model.trim()
       : "wan-fast";
-  const seed = opts.seed ?? Date.now();
+  const seed = Number(opts.seed) || Date.now();
   const audio =
     opts.audio === true || String(opts.audio || "").toLowerCase() === "true";
 
-  const url = `https://gen.pollinations.ai/video/${encodeURIComponent(
-    prompt.trim()
-  )}?duration=${duration}&aspectRatio=${encodeURIComponent(aspectRatio)}&model=${encodeURIComponent(
-    model
-  )}&seed=${seed}&audio=${audio ? "true" : "false"}`;
+  const authHeaders = {
+    Authorization: `Bearer ${key}`,
+    Accept: "video/mp4,*/*"
+  };
 
-  const upstream = await fetch(url, {
-    method: "GET",
+  // Prefer POST (prompt body) — long prompts break GET URLs and often return 400.
+  const postBody = {
+    prompt: cleanPrompt,
+    duration,
+    aspectRatio,
+    model,
+    seed,
+    audio
+  };
+
+  let upstream = await fetch("https://gen.pollinations.ai/video", {
+    method: "POST",
     headers: {
-      Authorization: `Bearer ${key}`
-    }
+      ...authHeaders,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(postBody)
   });
 
-  return upstream;
+  const maxGetPrompt = 900;
+  const shortPrompt =
+    cleanPrompt.length > maxGetPrompt
+      ? `${cleanPrompt.slice(0, maxGetPrompt)}…`
+      : cleanPrompt;
+
+  const tryGet = async () => {
+    const url = `https://gen.pollinations.ai/video/${encodeURIComponent(
+      shortPrompt
+    )}?duration=${duration}&aspectRatio=${encodeURIComponent(
+      aspectRatio
+    )}&model=${encodeURIComponent(model)}&seed=${seed}&audio=${
+      audio ? "true" : "false"
+    }&key=${encodeURIComponent(key)}`;
+    return fetch(url, { method: "GET", headers: authHeaders });
+  };
+
+  if (upstream.ok) return upstream;
+
+  const getRes = await tryGet();
+  return getRes;
 }
 
 app.post("/api/generate-video", async (req, res) => {
