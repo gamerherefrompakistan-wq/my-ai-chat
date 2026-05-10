@@ -1,3 +1,40 @@
+// ─────────────────────────────
+// LOGIN SYSTEM
+// ─────────────────────────────
+const loginModal = document.getElementById("login-modal");
+const loginBtn = document.getElementById("login-btn");
+const usernameEl = document.getElementById("username");
+const passwordEl = document.getElementById("password");
+
+// check login on load
+window.addEventListener("load", () => {
+  const loggedIn = localStorage.getItem("loggedIn");
+
+  if (loggedIn === "true") {
+    loginModal.style.display = "none";
+    document.body.classList.remove("locked");
+  } else {
+    loginModal.style.display = "flex";
+    document.body.classList.add("locked");
+  }
+});
+
+// login click
+loginBtn.addEventListener("click", () => {
+  const user = usernameEl.value.trim();
+  const pass = passwordEl.value.trim();
+
+  if (!user || !pass) {
+    alert("Username aur password required hai");
+    return;
+  }
+
+  // fake login (simple version)
+  localStorage.setItem("loggedIn", "true");
+
+  loginModal.style.display = "none";
+  document.body.classList.remove("locked");
+});
 const chatEl = document.getElementById("chat");
 const formEl = document.getElementById("chat-form");
 const promptEl = document.getElementById("prompt");
