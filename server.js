@@ -10,6 +10,48 @@ const port = process.env.PORT || 3000;
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
+// ─────────────────────────────────────────────
+// SUBSCRIPTION SYSTEM
+// ─────────────────────────────────────────────
+const FREE_DAILY_LIMIT = 10;
+
+const usageStore = {};
+
+const PAID_USERS = new Set([
+  ...(process.env.PAID_IPS ? process.env.PAID_IPS.split(",").map(s => s.trim()) : [])
+]);
+
+function getClientIP(req) {
+  return (
+    req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+    req.socket?.remoteAddress ||
+    "unknown"
+  );
+}
+
+function getTodayDate() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function checkAndUpdateUsage(ip) {
+  const today = getTodayDate();
+  if (PAID_USERS.has(ip)) {
+    return { allowed: true, isPaid: true, remaining: "unlimited" };
+  }
+  if (!usageStore[ip] || usageStore[ip].date !== today) {
+    usageStore[ip] = { count: 0, date: today };
+  }
+  const usage = usageStore[ip];
+  if (usage.count >= FREE_DAILY_LIMIT) {
+    return { allowed: false, isPaid: false, remaining: 0 };
+  }
+  usage.count += 1;
+  return { allowed: true, isPaid: false, remaining: FREE_DAILY_LIMIT - usage.count };
+}
+
+// ─────────────────────────────────────────────
+// GEMINI
+// ─────────────────────────────────────────────
 function getLastUserMessage(messages) {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     if (messages[i]?.role === "user") {
@@ -19,10 +61,6 @@ function getLastUserMessage(messages) {
     }
   }
   return "";
-}
-
-function demoReply(userText) {
-  return `Demo mode: "${userText}" — GEMINI_API_KEY set nahi hai.`;
 }
 
 const ASSISTANT_SYSTEM_PROMPT = `You are My AI Chat, a helpful multilingual assistant.
@@ -80,6 +118,9 @@ async function getGeminiReply(messages) {
   return data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
 }
 
+// ─────────────────────────────────────────────
+// POLLINATIONS VIDEO
+// ─────────────────────────────────────────────
 const POLLINATIONS_MAX_SEED = 2147483647;
 function toPollinationsSeed(value) {
   const fallback = Date.now() % POLLINATIONS_MAX_SEED;
@@ -93,7 +134,7 @@ function normalizePollinationsKey(raw) {
   if (!raw || typeof raw !== "string") return "";
   let k = raw.trim();
   if (k.startsWith("Bearer ")) k = k.slice(7).trim();
-  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) k = k.slice(1,-1).trim();
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) k = k.slice(1, -1).trim();
   const lower = k.toLowerCase();
   if (lower.startsWith("pollinations_api_key=")) k = k.slice("pollinations_api_key=".length).trim();
   return k;
@@ -117,9 +158,45 @@ async function pollinationsGenerateVideo(prompt, opts) {
   if (upstream.ok) return upstream;
   const maxGetPrompt = 900;
   const shortPrompt = cleanPrompt.length > maxGetPrompt ? `${cleanPrompt.slice(0, maxGetPrompt)}…` : cleanPrompt;
-  const url = `https://gen.pollinations.ai/video/${encodeURIComponent(shortPrompt)}?duration=${duration}&aspectRatio=${encodeURIComponent(aspectRatio)}&model=${encodeURIComponent(model)}&seed=${seed}&audio=${audio?"true":"false"}&key=${encodeURIComponent(key)}`;
+  const url = `https://gen.pollinations.ai/video/${encodeURIComponent(shortPrompt)}?duration=${duration}&aspectRatio=${encodeURIComponent(aspectRatio)}&model=${encodeURIComponent(model)}&seed=${seed}&audio=${audio ? "true" : "false"}&key=${encodeURIComponent(key)}`;
   return fetch(url, { method: "GET", headers: authHeaders });
 }
+
+// ─────────────────────────────────────────────
+// ROUTES
+// ─────────────────────────────────────────────
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { messages } = req.body;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "messages array required" });
+    }
+    const ip = getClientIP(req);
+    const usage = checkAndUpdateUsage(ip);
+    if (!usage.allowed) {
+      return res.status(429).json({
+        error: "limit_reached",
+        message: `Aapki aaj ki free limit (${FREE_DAILY_LIMIT} messages) khatam ho gayi! 😔\n\nPremium lene ke liye JazzCash/EasyPaisa karein:\n📱 ${process.env.JAZZCASH_NUMBER || "0300-XXXXXXX"}\nAmount: Rs. 300/month\n\nPayment ke baad WhatsApp karein aur unlimited access paaein! 🚀`,
+        jazzcash: process.env.JAZZCASH_NUMBER || "0300-XXXXXXX",
+        price: "Rs. 300/month"
+      });
+    }
+    try {
+      const reply = await getGeminiReply(messages);
+      return res.json({
+        reply,
+        usage: usage.isPaid
+          ? { plan: "premium", remaining: "unlimited" }
+          : { plan: "free", remaining: usage.remaining, total: FREE_DAILY_LIMIT }
+      });
+    } catch (error) {
+      console.error("Gemini API error:", error?.message || error);
+      return res.status(500).json({ error: "AI service error. Thodi der baad try karein." });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error?.message || "Unknown server error" });
+  }
+});
 
 app.post("/api/generate-video", async (req, res) => {
   try {
@@ -127,18 +204,25 @@ app.post("/api/generate-video", async (req, res) => {
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 4) {
       return res.status(400).json({ error: "Prompt required (at least 4 characters)" });
     }
+    const ip = getClientIP(req);
+    if (!PAID_USERS.has(ip)) {
+      return res.status(403).json({
+        error: "premium_required",
+        message: `Video generation sirf Premium users ke liye hai! 🎬\n\nPremium lene ke liye:\n📱 ${process.env.JAZZCASH_NUMBER || "0300-XXXXXXX"}\nAmount: Rs. 300/month`
+      });
+    }
     let upstream;
     try {
       upstream = await pollinationsGenerateVideo(prompt, { duration, model, aspectRatio, audio, seed: toPollinationsSeed(Date.now()) });
     } catch (e) {
       if (e.code === "MISSING_POLLINATIONS_KEY") {
-        return res.status(503).json({ error: "POLLINATIONS_API_KEY set nahi hai.", hint: "https://enter.pollinations.ai" });
+        return res.status(503).json({ error: "POLLINATIONS_API_KEY set nahi hai." });
       }
       throw e;
     }
     if (!upstream.ok) {
       const text = await upstream.text();
-      return res.status(502).json({ error: `Video generation failed (${upstream.status})`, detail: text.slice(0,800) });
+      return res.status(502).json({ error: `Video generation failed (${upstream.status})`, detail: text.slice(0, 800) });
     }
     res.setHeader("Content-Type", "video/mp4");
     res.setHeader("Cache-Control", "no-store");
@@ -149,23 +233,14 @@ app.post("/api/generate-video", async (req, res) => {
   }
 });
 
-app.post("/api/chat", async (req, res) => {
-  try {
-    const { messages } = req.body;
-    if (!Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: "messages array required" });
-    }
-    const userText = getLastUserMessage(messages);
-    try {
-      const reply = await getGeminiReply(messages);
-      return res.json({ reply });
-    } catch (error) {
-      console.error("Gemini API error:", error?.message || error);
-      return res.json({ reply: demoReply(userText) });
-    }
-  } catch (error) {
-    return res.status(500).json({ error: error?.message || "Unknown server error" });
-  }
+app.get("/api/usage", (req, res) => {
+  const ip = getClientIP(req);
+  const today = getTodayDate();
+  const isPaid = PAID_USERS.has(ip);
+  if (isPaid) return res.json({ plan: "premium", remaining: "unlimited" });
+  const usage = usageStore[ip];
+  const used = (usage && usage.date === today) ? usage.count : 0;
+  return res.json({ plan: "free", used, remaining: Math.max(0, FREE_DAILY_LIMIT - used), total: FREE_DAILY_LIMIT });
 });
 
 app.get("*", (req, res) => {
