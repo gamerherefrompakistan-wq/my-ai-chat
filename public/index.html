@@ -2,41 +2,85 @@
 <html lang="en">
   <head>
     <meta name="description" content="My AI Chat - Smart AI chatbot for website building, image generation and video generation.">
-<meta name="keywords" content="my ai chat, ai chatbot, website builder tool, image generator, video generator">
-<meta name="robots" content="index, follow">
-<title>My AI Chat - AI Powered Chatbot</title>
+    <meta name="keywords" content="my ai chat, ai chatbot, website builder tool, image generator, video generator">
+    <meta name="robots" content="index, follow">
+    <title>My AI Chat - AI Powered Chatbot</title>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="app">
-      <header class="topbar">
-        <img src="/logo.svg" alt="Logo" style="height: 45px; vertical-align: middle;">
-        <div class="top-links">
-          <a class="tool-link" href="./builder.html">Website Builder Tool</a>
-          <a class="tool-link" href="./image-tool.html">Image Generator Tool</a>
-          <a class="tool-link" href="./video-tool.html">Video Generator Tool</a>
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <img src="/logo.svg" alt="Logo" style="height: 36px;">
+          <button class="sidebar-toggle" id="close-sidebar">&#10005;</button>
         </div>
-      </header>
+        <button class="new-chat-btn" id="new-chat-btn">+ New Chat</button>
+        <div class="sidebar-section-title">Tools</div>
+        <nav class="sidebar-tools">
+          <a class="sidebar-tool-link" href="./builder.html">🌐 Website Builder</a>
+          <a class="sidebar-tool-link" href="./image-tool.html">🖼️ Image Generator</a>
+          <a class="sidebar-tool-link" href="./video-tool.html">🎬 Video Generator</a>
+        </nav>
+        <div class="sidebar-section-title">Chat History</div>
+        <div class="chat-history" id="chat-history">
+          <p class="no-history">No chats yet</p>
+        </div>
+        <div class="sidebar-footer">
+          <button class="settings-btn" id="settings-btn">⚙️ Settings</button>
+        </div>
+      </aside>
 
-      <section id="chat" class="chat"></section>
+      <div class="settings-panel" id="settings-panel" style="display:none;">
+        <div class="settings-header">
+          <span>Settings</span>
+          <button id="close-settings">&#10005;</button>
+        </div>
+        <div class="settings-body">
+          <label>Language</label>
+          <select id="lang-select">
+            <option value="roman_urdu">Roman Urdu</option>
+            <option value="english">English</option>
+          </select>
+          <label style="margin-top:16px;">Theme</label>
+          <select id="theme-select">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+          <button class="clear-history-btn" id="clear-history-btn">🗑️ Clear All History</button>
+        </div>
+      </div>
 
-      <form id="chat-form" class="composer">
-        <textarea
-          id="prompt"
-          rows="1"
-          placeholder="Type your message..."
-          required
-        ></textarea>
-        <button id="send-btn" type="submit">Send</button>
-      </form>
-    </main>
+      <div class="overlay" id="overlay"></div>
+
+      <main class="app">
+        <header class="topbar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="menu-btn" id="open-sidebar">☰</button>
+            <img src="/logo.svg" alt="Logo" style="height: 38px;">
+          </div>
+          <div class="top-links">
+            <a class="tool-link" href="./builder.html">Website Builder Tool</a>
+            <a class="tool-link" href="./image-tool.html">Image Generator Tool</a>
+            <a class="tool-link" href="./video-tool.html">Video Generator Tool</a>
+          </div>
+        </header>
+
+        <section id="chat" class="chat"></section>
+
+        <form id="chat-form" class="composer">
+          <textarea id="prompt" rows="1" placeholder="Type your message..." required></textarea>
+          <button id="send-btn" type="submit">Send</button>
+        </form>
+
+        <footer style="text-align: center; padding: 15px; color: #555; font-size: 13px; border-top: 1px solid #1e2a3a; margin-top: 20px;">
+          Software developed by <a href="https://coding-agency.com/" target="_blank" style="color: white; font-weight: bold; text-decoration: none;">Coding Agency</a>
+        </footer>
+      </main>
+    </div>
 
     <script src="./app.js"></script>
-    <footer style="text-align: center; padding: 15px; color: #555; font-size: 13px; border-top: 1px solid #1e2a3a; margin-top: 20px;">
-  Software developed by <a href="https://coding-agency.com/" target="_blank" style="color: white; font-weight: bold; text-decoration: none;">Coding Agency</a>
-</footer>
   </body>
 </html>
