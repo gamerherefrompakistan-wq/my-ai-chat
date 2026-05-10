@@ -142,18 +142,97 @@ newChatBtn.addEventListener("click", () => {
   closeSidebar();
 });
 
+// PARTICLES BACKGROUND
+(function initParticles() {
+  const canvas = document.createElement("canvas");
+  canvas.id = "particles-canvas";
+  document.body.prepend(canvas);
+  const ctx = canvas.getContext("2d");
+  let W, H, particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  function randomParticle() {
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.8 + 0.4,
+      dx: (Math.random() - 0.5) * 0.4,
+      dy: (Math.random() - 0.5) * 0.4,
+      alpha: Math.random() * 0.5 + 0.1
+    };
+  }
+
+  for (let i = 0; i < 90; i++) particles.push(randomParticle());
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(100, 160, 255, ${p.alpha})`;
+      ctx.fill();
+      p.x += p.dx; p.y += p.dy;
+      if (p.x < 0 || p.x > W) p.dx *= -1;
+      if (p.y < 0 || p.y > H) p.dy *= -1;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
 // Chat
-function appendMessage(role, content) {
+let loadingDiv = null;
+
+function showLoadingDots() {
+  loadingDiv = document.createElement("div");
+  loadingDiv.className = "msg assistant";
+  loadingDiv.innerHTML = `<div class="loading-dots"><span></span><span></span><span></span></div>`;
+  chatEl.appendChild(loadingDiv);
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function removeLoadingDots() {
+  if (loadingDiv) { loadingDiv.remove(); loadingDiv = null; }
+}
+
+function appendMessage(role, content, animate = false) {
   const div = document.createElement("div");
   div.className = `msg ${role === "user" ? "user" : "assistant"}`;
-  div.textContent = content;
-  chatEl.appendChild(div);
-  chatEl.scrollTop = chatEl.scrollHeight;
+
+  if (role === "assistant" && animate) {
+    div.classList.add("typing-cursor");
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+    let i = 0;
+    const speed = 18;
+    function typeChar() {
+      if (i < content.length) {
+        div.textContent += content[i++];
+        chatEl.scrollTop = chatEl.scrollHeight;
+        setTimeout(typeChar, speed);
+      } else {
+        div.classList.remove("typing-cursor");
+      }
+    }
+    typeChar();
+  } else {
+    div.textContent = content;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
 }
 
 function setLoading(isLoading) {
   sendBtn.disabled = isLoading;
   sendBtn.textContent = isLoading ? "..." : "Send";
+  if (isLoading) showLoadingDots();
+  else removeLoadingDots();
 }
 
 formEl.addEventListener("submit", async (event) => {
@@ -178,7 +257,7 @@ formEl.addEventListener("submit", async (event) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Request failed");
 
-    appendMessage("assistant", data.reply);
+    appendMessage("assistant", data.reply, true);
     messages.push({ role: "assistant", content: data.reply });
     saveSession();
   } catch (error) {
@@ -192,4 +271,5 @@ formEl.addEventListener("submit", async (event) => {
 // Init
 startNewChat();
 renderHistory();
+
 
