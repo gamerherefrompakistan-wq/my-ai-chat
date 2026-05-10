@@ -55,6 +55,58 @@
 
       <div class="overlay" id="overlay"></div>
 
+      <!-- UPGRADE MODAL -->
+      <div id="upgrade-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#0f1117; border-radius:16px; border:1px solid rgba(255,255,255,0.12); width:90%; max-width:440px; overflow:hidden;">
+          <div style="padding:1.5rem; text-align:center; border-bottom:1px solid rgba(255,255,255,0.08);">
+            <div style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; background:#6366f1; border-radius:12px; margin-bottom:12px; font-size:22px;">✨</div>
+            <p style="font-size:20px; font-weight:600; color:#fff; margin:0 0 6px;">Upgrade Your Plan</p>
+            <p style="font-size:14px; color:rgba(255,255,255,0.5); margin:0;">You've reached your free daily limit</p>
+          </div>
+
+          <div style="padding:1.25rem; display:flex; flex-direction:column; gap:10px;">
+            <!-- Free Plan -->
+            <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:1rem;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <p style="font-size:15px; font-weight:600; color:#fff; margin:0;">Free</p>
+                <p style="font-size:15px; color:rgba(255,255,255,0.5); margin:0;">Rs. 0</p>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px; font-size:13px;">
+                <div style="color:rgba(255,255,255,0.5);">✅ 10 messages per day</div>
+                <div style="color:rgba(255,255,255,0.5);">✅ Basic chat</div>
+                <div style="color:rgba(255,255,255,0.3);">❌ Image generation</div>
+                <div style="color:rgba(255,255,255,0.3);">❌ Video generation</div>
+              </div>
+              <div style="margin-top:12px; width:100%; padding:9px; background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:8px; color:rgba(255,255,255,0.4); font-size:14px; text-align:center;">Current Plan</div>
+            </div>
+
+            <!-- Premium Plan -->
+            <div style="background:rgba(99,102,241,0.12); border:2px solid #6366f1; border-radius:12px; padding:1rem; position:relative;">
+              <div style="position:absolute; top:-11px; left:50%; transform:translateX(-50%); background:#6366f1; color:#fff; font-size:11px; padding:3px 14px; border-radius:20px; white-space:nowrap;">Most Popular</div>
+              <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <p style="font-size:15px; font-weight:600; color:#fff; margin:0;">Premium</p>
+                <p style="font-size:15px; font-weight:600; color:#fff; margin:0;">Rs. 300<span style="font-size:12px; color:rgba(255,255,255,0.5);">/month</span></p>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px; font-size:13px;">
+                <div style="color:rgba(255,255,255,0.9);">✅ Unlimited messages</div>
+                <div style="color:rgba(255,255,255,0.9);">✅ Image generation</div>
+                <div style="color:rgba(255,255,255,0.9);">✅ Video generation</div>
+                <div style="color:rgba(255,255,255,0.9);">✅ Priority support</div>
+              </div>
+              <button id="pay-btn" style="margin-top:12px; width:100%; padding:10px; background:#6366f1; border:none; border-radius:8px; color:#fff; font-size:14px; font-weight:600; cursor:pointer;">
+                💬 Pay via JazzCash / EasyPaisa
+              </button>
+            </div>
+          </div>
+
+          <div style="padding:0 1.25rem 1.25rem; text-align:center;">
+            <p style="font-size:12px; color:rgba(255,255,255,0.3); margin:0 0 10px;">After payment, WhatsApp us — activated within 5 minutes</p>
+            <button id="close-modal-btn" style="background:transparent; border:none; color:rgba(255,255,255,0.3); font-size:13px; cursor:pointer;">Maybe later</button>
+          </div>
+        </div>
+      </div>
+      <!-- END UPGRADE MODAL -->
+
       <main class="app">
         <header class="topbar">
           <div style="display:flex; align-items:center; gap:10px;">
@@ -83,11 +135,35 @@
           <button id="send-btn" type="submit">Send</button>
         </form>
 
-        <footer style="text-align: center; padding: 15px; color: #555; font-size: 13px; border-top: 1px solid #1e2a3a; margin-top: 20px;">
-          Software developed by <a href="https://coding-agency.com/" target="_blank" style="color: white; font-weight: bold; text-decoration: none;">Coding Agency</a>
+        <footer style="text-align:center; padding:15px; color:#555; font-size:13px; border-top:1px solid #1e2a3a; margin-top:20px;">
+          Software developed by <a href="https://coding-agency.com/" target="_blank" style="color:white; font-weight:bold; text-decoration:none;">Coding Agency</a>
         </footer>
       </main>
     </div>
+
     <script src="./app.js"></script>
+    <script>
+      // Upgrade Modal Logic
+      function showUpgradeModal() {
+        const modal = document.getElementById('upgrade-modal');
+        modal.style.display = 'flex';
+      }
+
+      function hideUpgradeModal() {
+        const modal = document.getElementById('upgrade-modal');
+        modal.style.display = 'none';
+      }
+
+      document.getElementById('close-modal-btn').addEventListener('click', hideUpgradeModal);
+
+      document.getElementById('pay-btn').addEventListener('click', function() {
+        const number = '03285087289';
+        const msg = encodeURIComponent('Hello! I have paid Rs. 300 via JazzCash/EasyPaisa for the Premium plan. Please activate my account. Thank you!');
+        window.open('https://wa.me/92' + number.replace(/^0/, '') + '?text=' + msg, '_blank');
+      });
+
+      // Server se limit_reached aane pe modal dikhao
+      window.showUpgradeModal = showUpgradeModal;
+    </script>
   </body>
 </html>
