@@ -1,119 +1,235 @@
-const promptEl = document.getElementById("prompt");
-const widthEl = document.getElementById("width");
-const heightEl = document.getElementById("height");
-const generateBtn = document.getElementById("generateBtn");
-const downloadBtn = document.getElementById("downloadBtn");
-const copyBtn = document.getElementById("copyBtn");
-const statusEl = document.getElementById("status");
-const imageUrlEl = document.getElementById("imageUrl");
-const outputEl = document.getElementById("output");
+const promptEl     = document.getElementById("prompt");
+const widthEl      = document.getElementById("width");
+const heightEl     = document.getElementById("height");
+const generateBtn  = document.getElementById("generateBtn");
+const downloadBtn  = document.getElementById("downloadBtn");
+const copyBtn      = document.getElementById("copyBtn");
+const regenerateBtn= document.getElementById("regenerateBtn");
+const statusDot    = document.getElementById("statusDot");
+const statusText   = document.getElementById("statusText");
+const outputEl     = document.getElementById("output");
+const imageUrlEl   = document.getElementById("imageUrl");
+const idleState    = document.getElementById("idleState");
+const loadingState = document.getElementById("loadingState");
+const imageWrap    = document.getElementById("imageWrap");
+const loadingTitle = document.getElementById("loadingTitle");
+const loadingMsg   = document.getElementById("loadingMsg");
+const charCount    = document.getElementById("charCount");
 
-function buildUrl(prompt, width, height) {
-  const cleanPrompt = encodeURIComponent(prompt);
-  const seed = Math.floor(Math.random() * 99999999);
-  return `https://image.pollinations.ai/prompt/${cleanPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
-}
+let currentStyle = "";
+let lastPrompt   = "";
+let msgInterval  = null;
 
-// Roman Urdu / Urdu ko English mein translate karo simple words se
-function translateToEnglish(prompt) {
-  const dict = {
-    "kro": "", "karo": "", "generate": "", "banao": "", "bnao": "",
-    "cycle": "bicycle", "sawar": "riding", "larki": "girl", "larka": "boy",
-    "ghar": "house", "gaari": "car", "pani": "water", "aasman": "sky",
-    "phool": "flower", "darya": "river", "pahar": "mountain", "jungle": "forest",
-    "raat": "night", "din": "day", "suraj": "sun", "chand": "moon",
-    "billi": "cat", "kutta": "dog", "ghora": "horse", "chirya": "bird",
-    "admi": "man", "aurat": "woman", "bacha": "child", "dost": "friend",
-    "khana": "food", "chai": "tea", "kitab": "book", "school": "school",
-    "shahar": "city", "gaon": "village", "sadak": "road", "dukaan": "shop"
-  };
+// ── Char counter ──
+promptEl.addEventListener("input", () => {
+  charCount.textContent = promptEl.value.length;
+});
 
-  let result = prompt.toLowerCase();
-  Object.keys(dict).forEach(urdu => {
-    result = result.replace(new RegExp(`\\b${urdu}\\b`, "gi"), dict[urdu]);
+// ── Style buttons ──
+document.querySelectorAll(".style-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".style-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentStyle = btn.dataset.style;
   });
+});
 
-  // Clean up extra spaces
-  result = result.replace(/\s+/g, " ").trim();
+// ── Preset buttons ──
+document.querySelectorAll(".preset-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    widthEl.value  = btn.dataset.w;
+    heightEl.value = btn.dataset.h;
+  });
+});
 
-  // Agar kuch bacha nahi toh original rakho
-  if (!result || result.length < 3) result = prompt;
+// ── Urdu/Roman Urdu dict ──
+const dict = {
+  "cycle":"bicycle","sawar":"riding","larki":"girl","larka":"boy",
+  "ghar":"house","gaari":"car","pani":"water","aasman":"sky",
+  "phool":"flower","darya":"river","pahar":"mountain","jungle":"forest",
+  "raat":"night","din":"day","suraj":"sun","chand":"moon",
+  "billi":"cat","kutta":"dog","ghora":"horse","chirya":"bird",
+  "admi":"man","aurat":"woman","bacha":"child","dost":"friend",
+  "khana":"food","chai":"tea","kitab":"book","shahar":"city",
+  "gaon":"village","sadak":"road","banao":"","bnao":"","kro":"","karo":"","generate":""
+};
 
-  return result + ", realistic, HD, high quality, 4k";
+function preparePrompt(raw) {
+  let p = raw.toLowerCase();
+  Object.keys(dict).forEach(k => {
+    p = p.replace(new RegExp(`\\b${k}\\b`, "gi"), dict[k]);
+  });
+  p = p.replace(/\s+/g, " ").trim();
+  if (!p || p.length < 3) p = raw;
+  if (currentStyle) p += ", " + currentStyle;
+  p += ", high quality, HD, detailed, 4k";
+  return p;
 }
 
-function loadImage(url) {
-  statusEl.textContent = "Image generate ho rahi hai... ⏳ (30-60 sec lag sakte hain)";
-  outputEl.style.display = "none";
-
-  // Timeout — 60 seconds
-  const timeout = setTimeout(() => {
-    outputEl.src = "";
-    statusEl.textContent = "Timeout — dobara Generate karo. ⚠️";
-  }, 60000);
-
-  outputEl.onload = () => {
-    clearTimeout(timeout);
-    statusEl.innerHTML = "Image ready ✅";
-    outputEl.style.display = "block";
-  };
-
-  outputEl.onerror = () => {
-    clearTimeout(timeout);
-    // Naye seed ke saath retry
-    const prompt = decodeURIComponent(url.split("/prompt/")[1].split("?")[0]);
-    const newUrl = buildUrl(prompt, widthEl.value, heightEl.value);
-    imageUrlEl.value = newUrl;
-    statusEl.textContent = "Retry ho rahi hai... ⏳";
-    setTimeout(() => {
-      outputEl.src = newUrl;
-    }, 3000);
-  };
-
-  outputEl.src = url;
+function buildUrl(prompt) {
+  const seed = Math.floor(Math.random() * 99999999);
+  const w    = Number(widthEl.value)  || 1024;
+  const h    = Number(heightEl.value) || 1024;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${w}&height=${h}&seed=${seed}&nologo=true`;
 }
 
-generateBtn.addEventListener("click", () => {
-  const rawPrompt = promptEl.value.trim();
-  if (!rawPrompt) {
-    statusEl.textContent = "Pehle prompt likho.";
-    return;
-  }
+// ── Loading messages ──
+const loadingMessages = [
+  ["Image Generate Ho Rahi Hai...", "AI har pixel carefully bana raha hai"],
+  ["Fine Details Add Ho Rahe Hain...", "Thora aur wait karo, almost ready"],
+  ["Colors Finalize Ho Rahe Hain...", "Tera masterpiece tayar hone wala hai"],
+  ["Final Touches...", "Bas kuch seconds aur..."],
+];
 
-  const width = Number(widthEl.value) || 1024;
-  const height = Number(heightEl.value) || 1024;
+function startLoadingMessages() {
+  let i = 0;
+  msgInterval = setInterval(() => {
+    i = (i + 1) % loadingMessages.length;
+    loadingTitle.textContent = loadingMessages[i][0];
+    loadingMsg.textContent   = loadingMessages[i][1];
+  }, 7000);
+}
 
-  // English mein convert karo
-  const englishPrompt = translateToEnglish(rawPrompt);
-  const url = buildUrl(englishPrompt, width, height);
+function stopLoadingMessages() {
+  if (msgInterval) { clearInterval(msgInterval); msgInterval = null; }
+}
+
+// ── State helpers ──
+function setIdle(msg) {
+  idleState.style.display    = "";
+  loadingState.style.display = "none";
+  imageWrap.style.display    = "none";
+  statusDot.className = "status-dot idle";
+  statusText.textContent = msg || "Tayyar hai — prompt likho aur generate karo";
+}
+
+function setLoading() {
+  idleState.style.display    = "none";
+  loadingState.style.display = "";
+  imageWrap.style.display    = "none";
+  statusDot.className = "status-dot loading";
+  statusText.textContent = "Image generate ho rahi hai...";
+  // Reset progress bar
+  const fill = document.getElementById("progressFill");
+  fill.style.animation = "none";
+  fill.offsetHeight;
+  fill.style.animation = "progressAnim 40s ease-in-out forwards";
+  // Reset loading text
+  loadingTitle.textContent = loadingMessages[0][0];
+  loadingMsg.textContent   = loadingMessages[0][1];
+  startLoadingMessages();
+}
+
+function setSuccess() {
+  idleState.style.display    = "none";
+  loadingState.style.display = "none";
+  imageWrap.style.display    = "";
+  statusDot.className = "status-dot success";
+  statusText.textContent = "Image ready hai ✅ Download ya copy karo";
+  stopLoadingMessages();
+  downloadBtn.disabled  = false;
+  copyBtn.disabled      = false;
+  regenerateBtn.disabled= false;
+}
+
+function setError(msg) {
+  idleState.style.display    = "";
+  loadingState.style.display = "none";
+  imageWrap.style.display    = "none";
+  statusDot.className = "status-dot error";
+  statusText.textContent = msg || "Error aa gaya — dobara try karo";
+  stopLoadingMessages();
+  generateBtn.disabled = false;
+  document.querySelector(".btn-content").style.display = "flex";
+  document.querySelector(".btn-loading").style.display = "none";
+}
+
+// ── Generate ──
+function doGenerate(rawPrompt) {
+  if (!rawPrompt) { promptEl.focus(); return; }
+  lastPrompt = rawPrompt;
+
+  const finalPrompt = preparePrompt(rawPrompt);
+  const url = buildUrl(finalPrompt);
   imageUrlEl.value = url;
-  loadImage(url);
-});
 
-copyBtn.addEventListener("click", async () => {
-  if (!imageUrlEl.value) { statusEl.textContent = "Pehle image generate karo."; return; }
-  await navigator.clipboard.writeText(imageUrlEl.value);
-  statusEl.textContent = "URL copy ho gaya! ✅";
-});
+  generateBtn.disabled = true;
+  downloadBtn.disabled = true;
+  copyBtn.disabled     = true;
+  regenerateBtn.disabled = true;
 
-downloadBtn.addEventListener("click", () => {
-  if (!outputEl.src || outputEl.style.display === "none") {
-    statusEl.textContent = "Pehle image generate karo.";
-    return;
+  document.querySelector(".btn-content").style.display = "none";
+  document.querySelector(".btn-loading").style.display = "flex";
+
+  setLoading();
+
+  let tries = 0;
+  const maxTries = 3;
+
+  function tryLoad() {
+    const img = document.getElementById("output");
+
+    img.onload = () => {
+      generateBtn.disabled = false;
+      document.querySelector(".btn-content").style.display = "flex";
+      document.querySelector(".btn-loading").style.display = "none";
+      setSuccess();
+    };
+
+    img.onerror = () => {
+      tries++;
+      if (tries < maxTries) {
+        loadingTitle.textContent = `Retry ${tries}/${maxTries}...`;
+        loadingMsg.textContent   = "Dobara koshish ho rahi hai...";
+        const newUrl = buildUrl(finalPrompt);
+        imageUrlEl.value = newUrl;
+        setTimeout(() => { img.src = newUrl; }, 3000);
+      } else {
+        setError("Image load nahi hui — dobara Generate karo");
+        generateBtn.disabled = false;
+        document.querySelector(".btn-content").style.display = "flex";
+        document.querySelector(".btn-loading").style.display = "none";
+      }
+    };
+
+    img.src = url;
   }
-  fetch(outputEl.src)
-    .then(res => res.blob())
-    .then(blob => {
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "ai-generated-image.png";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      statusEl.textContent = "Download shuru ho gaya! ✅";
-    })
-    .catch(() => {
-      window.open(outputEl.src, "_blank");
-    });
+
+  tryLoad();
+}
+
+generateBtn.addEventListener("click", () => doGenerate(promptEl.value.trim()));
+regenerateBtn.addEventListener("click", () => doGenerate(lastPrompt || promptEl.value.trim()));
+
+// Ctrl+Enter shortcut
+promptEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.ctrlKey) doGenerate(promptEl.value.trim());
 });
 
+// Copy URL
+copyBtn.addEventListener("click", async () => {
+  if (!imageUrlEl.value) return;
+  await navigator.clipboard.writeText(imageUrlEl.value);
+  const orig = copyBtn.innerHTML;
+  copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+  setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
+});
+
+// Download
+downloadBtn.addEventListener("click", () => {
+  if (!outputEl.src) return;
+  fetch(outputEl.src)
+    .then(r => r.blob())
+    .then(blob => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `my-ai-image-${Date.now()}.png`;
+      a.click();
+    })
+    .catch(() => window.open(outputEl.src, "_blank"));
+});
+
+// Init
+setIdle();
