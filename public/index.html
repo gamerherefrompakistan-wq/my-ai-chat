@@ -136,16 +136,21 @@
 
         <!-- COMPOSER -->
         <form id="chat-form" class="composer">
-          <input type="file" id="file-input" accept="image/*" style="display:none;">
+  <input type="file" id="file-input" accept="image/*" style="display:none;">
+  
+  <div id="image-preview-wrap" style="display:none; align-items:center; gap:8px; padding:0 8px;">
+    <img id="image-preview" src="" style="height:50px; border-radius:8px;">
+    <button type="button" id="remove-img-btn" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:18px;">✕</button>
+  </div>
 
-          <button type="button" id="attach-btn">📎</button>
+  <button type="button" id="attach-btn" style="background:none; border:none; color:#aaa; font-size:20px; cursor:pointer;">📎</button>
 
-          <div class="composer-inner">
-            <textarea id="prompt" rows="1" placeholder="Type your message..." required></textarea>
-          </div>
+  <div class="composer-inner">
+    <textarea id="prompt" rows="1" placeholder="Type your message..." required></textarea>
+  </div>
 
-          <button id="send-btn" type="submit">Send</button>
-        </form>
+  <button id="send-btn" type="submit">Send</button>
+</form>
 
         <!-- FOOTER -->
         <footer style="text-align:center; padding:15px; color:#555; font-size:13px;">
