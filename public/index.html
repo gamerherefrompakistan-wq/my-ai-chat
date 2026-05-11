@@ -1,251 +1,189 @@
-<!DOCTYPE html>
-<html lang="ur">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My AI Chat</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #04080f; font-family: 'DM Sans', sans-serif; height: 100vh; overflow: hidden; display: flex; }
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta name="description" content="My AI Chat - Smart AI chatbot for website building, image generation and video generation.">
+    <meta name="keywords" content="my ai chat, ai chatbot, website builder tool, image generator, video generator">
+    <meta name="robots" content="index, follow">
+    <title>My AI Chat - AI Powered Chatbot</title>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
 
-    canvas#stars { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  <body>
+    <div id="login-modal" class="login-modal">
+  <div class="login-box">
 
-    /* SIDEBAR */
-    .sidebar {
-      width: 210px; min-width: 210px;
-      background: rgba(8,10,20,0.95);
-      border-right: 0.5px solid rgba(255,255,255,0.06);
-      display: flex; flex-direction: column;
-      padding: 16px 10px; z-index: 10;
-    }
-    .logo {
-      display: flex; align-items: center; gap: 10px;
-      padding: 6px 8px 16px;
-      border-bottom: 0.5px solid rgba(255,255,255,0.06);
-      margin-bottom: 12px;
-    }
-    .logo-icon {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, #9333ea, #db2777);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .logo-icon svg { width: 15px; height: 15px; }
-    .logo-text { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: #e2e8f0; }
-    .logo-text b { color: #a855f7; }
+    <h2>Login Required</h2>
+    <p>App use karne ke liye login karo</p>
 
-    .nav-label {
-      font-size: 10px; color: rgba(255,255,255,0.22);
-      letter-spacing: 1.5px; text-transform: uppercase;
-      padding: 6px 10px 5px; margin-top: 4px;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 10px; border-radius: 8px;
-      cursor: pointer; color: rgba(255,255,255,0.4);
-      font-size: 13px; transition: all 0.18s;
-      text-decoration: none; margin-bottom: 1px;
-    }
-    .nav-item:hover { background: rgba(147,51,234,0.1); color: rgba(255,255,255,0.8); }
-    .nav-item.active {
-      background: rgba(147,51,234,0.18); color: #c084fc;
-      border: 0.5px solid rgba(147,51,234,0.3);
-    }
-    .nav-item i { font-size: 16px; width: 18px; flex-shrink: 0; }
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
 
-    .sidebar-bottom {
-      margin-top: auto; padding-top: 12px;
-      border-top: 0.5px solid rgba(255,255,255,0.06);
-    }
-    .status-dot {
-      display: inline-block; width: 7px; height: 7px;
-      border-radius: 50%; background: #34d399;
-      box-shadow: 0 0 6px #34d399; margin-right: 7px;
-    }
-    .status-txt { font-size: 11px; color: rgba(255,255,255,0.28); }
+    <button id="login-btn">Login</button>
 
-    /* MAIN */
-    .main {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 28px 40px; position: relative; z-index: 10;
-    }
-    .welcome-heading {
-      font-family: 'Syne', sans-serif;
-      font-size: 30px; font-weight: 700;
-      text-align: center; margin-bottom: 44px; line-height: 1.3;
-      animation: fadeUp 0.5s ease both;
-    }
-    .welcome-heading .w1 { color: #ffffff; }
-    .welcome-heading .w2 {
-      background: linear-gradient(90deg, #a855f7, #ec4899);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    /* INPUT */
-    .input-box { width: 100%; max-width: 560px; animation: fadeUp 0.5s 0.1s ease both; }
-    .input-wrap {
-      display: flex; align-items: flex-end;
-      background: rgba(255,255,255,0.05);
-      border: 0.5px solid rgba(255,255,255,0.13);
-      border-radius: 14px; padding: 12px 12px 12px 18px;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .input-wrap:focus-within {
-      border-color: rgba(168,85,247,0.45);
-      background: rgba(255,255,255,0.07);
-    }
-    .input-wrap textarea {
-      flex: 1; background: transparent; border: none; outline: none;
-      color: #e2e8f0; font-family: 'DM Sans', sans-serif;
-      font-size: 14px; resize: none; min-height: 24px; max-height: 130px; line-height: 1.6;
-    }
-    .input-wrap textarea::placeholder { color: rgba(255,255,255,0.2); }
-    .input-actions { display: flex; align-items: center; gap: 8px; padding-left: 10px; }
-    .attach-btn {
-      background: none; border: 0.5px solid rgba(255,255,255,0.1);
-      border-radius: 7px; width: 32px; height: 32px;
-      cursor: pointer; color: rgba(255,255,255,0.3);
-      display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-    }
-    .attach-btn:hover { border-color: rgba(168,85,247,0.35); color: #a855f7; }
-    .send-btn {
-      background: linear-gradient(135deg, #7c3aed, #be185d);
-      border: none; border-radius: 9px; width: 36px; height: 36px;
-      cursor: pointer; color: white;
-      display: flex; align-items: center; justify-content: center;
-      transition: transform 0.2s, opacity 0.2s; flex-shrink: 0;
-    }
-    .send-btn:hover { transform: scale(1.06); opacity: 0.88; }
-    .send-btn i { font-size: 16px; }
-    .input-hint { display: flex; justify-content: space-between; margin-top: 8px; padding: 0 3px; }
-    .hint-txt { font-size: 11px; color: rgba(255,255,255,0.18); }
-    .char-count { font-size: 11px; color: rgba(255,255,255,0.16); font-variant-numeric: tabular-nums; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 600px) {
-      .sidebar { width: 56px; min-width: 56px; }
-      .logo-text, .nav-label, .status-txt { display: none; }
-      .nav-item { justify-content: center; padding: 9px; }
-      .logo { justify-content: center; }
-      .welcome-heading { font-size: 22px; }
-    }
-  </style>
-</head>
-<body>
-
-<canvas id="stars"></canvas>
-
-<nav class="sidebar">
-  <div class="logo">
-    <div class="logo-icon">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="9" fill="white" fill-opacity="0.15"/>
-        <circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.5"/>
-        <path d="M8 12l2.5 2.5L16 9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-    <div class="logo-text">My <b>AI</b> Chat</div>
   </div>
+</div>
+    <div class="layout">
 
-  <div class="nav-label">Menu</div>
-  <a class="nav-item" href="index.html">
-    <i class="ti ti-arrow-right"></i> Chat
-  </a>
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <a href="/index.html" style="text-decoration:none; display:inline-flex; align-items:center;">
+            <img src="/logo.svg" alt="Logo" style="height: 36px; background: transparent; mix-blend-mode: screen;">
+          </a>
+          <button class="sidebar-toggle" id="close-sidebar">&#10005;</button>
+        </div>
 
-  <div class="nav-label" style="margin-top:6px">Create</div>
-  <a class="nav-item" href="image-generator.html">
-    <i class="ti ti-photo-ai"></i> Image Generator
-  </a>
-  <a class="nav-item" href="video-generator.html">
-    <i class="ti ti-video"></i> Video Generator
-  </a>
+        <button class="new-chat-btn" id="new-chat-btn">+ New Chat</button>
 
-  <div class="sidebar-bottom">
-    <span class="status-dot"></span>
-    <span class="status-txt">Pollinations AI</span>
-  </div>
-</nav>
+        <div class="sidebar-section-title">Tools</div>
 
-<main class="main">
-  <div class="welcome-heading">
-    <span class="w1">Welcome to </span><span class="w2">My AI Chat</span>
-  </div>
+        <div class="sidebar-section-title">Chat History</div>
+        <div class="chat-history" id="chat-history">
+          <p class="no-history">No chats yet</p>
+        </div>
 
-  <div class="input-box">
-    <div class="input-wrap">
-      <textarea
-        id="chatInput"
-        rows="1"
-        placeholder="Kuch bhi poochho..."
-        oninput="autoResize(this); updateCount(this)"
-        onkeydown="handleKey(event)"
-      ></textarea>
-      <div class="input-actions">
-        <button class="attach-btn" title="File attach karo">
-          <i class="ti ti-paperclip"></i>
-        </button>
-        <button class="send-btn" onclick="sendMessage()" title="Send">
-          <i class="ti ti-arrow-up"></i>
-        </button>
+        <div class="sidebar-footer">
+          <button class="settings-btn" id="settings-btn">⚙️ Settings</button>
+        </div>
+      </aside>
+
+      <!-- SETTINGS -->
+      <div class="settings-panel" id="settings-panel" style="display:none;">
+        <div class="settings-header">
+          <span>Settings</span>
+          <button id="close-settings">&#10005;</button>
+        </div>
+
+        <div class="settings-body">
+          <label>Language</label>
+          <select id="lang-select">
+            <option value="roman_urdu">Roman Urdu</option>
+            <option value="english">English</option>
+          </select>
+
+          <label style="margin-top:16px;">Theme</label>
+          <select id="theme-select">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+
+          <button class="clear-history-btn" id="clear-history-btn">🗑️ Clear All History</button>
+        </div>
       </div>
-    </div>
-    <div class="input-hint">
-      <span class="hint-txt">Enter = Send &nbsp;|&nbsp; Shift+Enter = New line</span>
-      <span class="char-count" id="charCount">0</span>
-    </div>
+
+      <div class="overlay" id="overlay"></div>
+
+      <!-- UPGRADE MODAL -->
+      <div id="upgrade-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#0f1117; border-radius:16px; border:1px solid rgba(255,255,255,0.12); width:90%; max-width:440px; overflow:hidden;">
+
+          <div style="padding:1.5rem; text-align:center; border-bottom:1px solid rgba(255,255,255,0.08);">
+            <div style="width:48px;height:48px;background:#6366f1;border-radius:12px;margin:auto;margin-bottom:12px;display:flex;align-items:center;justify-content:center;font-size:22px;">✨</div>
+            <p style="font-size:20px;font-weight:600;color:#fff;margin:0;">Upgrade Your Plan</p>
+            <p style="font-size:14px;color:rgba(255,255,255,0.5);margin:5px 0 0;">Free limit reached</p>
+          </div>
+
+          <div style="padding:1rem;">
+            <div style="border:1px solid rgba(255,255,255,0.1);padding:1rem;border-radius:12px;">
+              <p style="color:#fff;margin:0;font-weight:600;">Free Plan</p>
+              <p style="color:rgba(255,255,255,0.5);margin:5px 0;">10 messages/day</p>
+            </div>
+
+            <div style="margin-top:10px;border:2px solid #6366f1;padding:1rem;border-radius:12px;">
+              <p style="color:#fff;margin:0;font-weight:600;">Premium Plan</p>
+              <p style="color:#fff;margin:5px 0;">Rs. 300/month</p>
+
+              <button id="pay-btn" style="width:100%;margin-top:10px;padding:10px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer;">
+                Pay via JazzCash / EasyPaisa
+              </button>
+            </div>
+          </div>
+
+          <div style="text-align:center;padding:10px;">
+            <button id="close-modal-btn" style="background:none;border:none;color:#aaa;">Close</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- MAIN -->
+      <main class="app">
+
+        <header class="topbar">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="menu-btn" id="open-sidebar">☰</button>
+
+            <a href="/index.html" style="text-decoration:none; display:inline-flex; align-items:center;">
+              <img src="/logo.svg" alt="Logo" style="height: 38px; background: transparent; mix-blend-mode: screen;">
+            </a>
+          </div>
+
+          <!-- ✅ ONLY ONE TOP LINKS BLOCK -->
+          <div class="top-links">
+            <a class="tool-link" href="./builder.html">Website Builder Tool</a>
+            <a class="tool-link" href="./image-tool.html">Image Generator Tool</a>
+            <a class="tool-link" href="./video-tool.html">Video Generator Tool</a>
+
+            <button id="get-plus-top-btn" class="tool-link">✨ Get Plus</button>
+          </div>
+        </header>
+
+        <!-- CHAT -->
+        <section id="chat" class="chat"></section>
+
+        <!-- COMPOSER -->
+        <form id="chat-form" class="composer">
+  <input type="file" id="file-input" accept="image/*" style="display:none;">
+  
+  <div id="image-preview-wrap" style="display:none; align-items:center; gap:8px; padding:0 8px;">
+    <img id="image-preview" src="" style="height:50px; border-radius:8px;">
+    <button type="button" id="remove-img-btn" style="background:none; border:none; color:#ff6b6b; cursor:pointer; font-size:18px;">✕</button>
   </div>
-</main>
 
-<script>
-  /* Starfield */
-  const canvas = document.getElementById('stars');
-  const ctx = canvas.getContext('2d');
-  let stars = [];
-  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  function initStars() {
-    stars = [];
-    for (let i = 0; i < 220; i++) {
-      stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height,
-        r: Math.random()*1.3+0.2, tw: Math.random()*Math.PI*2, sp: Math.random()*0.004+0.001 });
-    }
-  }
-  function drawStars() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (const s of stars) {
-      s.tw += s.sp;
-      const a = 0.15 + 0.65*(0.5+0.5*Math.sin(s.tw));
-      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(190,160,255,${a})`; ctx.fill();
-    }
-    requestAnimationFrame(drawStars);
-  }
-  resize(); initStars(); drawStars();
-  window.addEventListener('resize', () => { resize(); initStars(); });
+  <button type="button" id="attach-btn" style="background:none; border:none; color:#aaa; font-size:20px; cursor:pointer;">📎</button>
 
-  /* Nav active state */
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function() {
-      document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
-      this.classList.add('active');
-    });
-  });
+  <div class="composer-inner">
+    <textarea id="prompt" rows="1" placeholder="Type your message..." required></textarea>
+  </div>
 
-  /* Input */
-  function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 130) + 'px'; }
-  function updateCount(el) { document.getElementById('charCount').textContent = el.value.length; }
-  function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-  function sendMessage() {
-    const val = document.getElementById('chatInput').value.trim();
-    if (!val) return;
-    // Yahan apna API call lagao
-    console.log('Message:', val);
-  }
-</script>
-</body>
+  <button id="send-btn" type="submit">Send</button>
+</form>
+
+        <!-- FOOTER -->
+        <footer style="text-align:center; padding:15px; color:#555; font-size:13px;">
+          Software developed by
+          <a href="https://coding-agency.com/" target="_blank" style="color:white; font-weight:bold;">
+            Coding Agency
+          </a>
+        </footer>
+
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+
+    <script>
+      function showUpgradeModal() {
+        document.getElementById('upgrade-modal').style.display = 'flex';
+      }
+
+      function hideUpgradeModal() {
+        document.getElementById('upgrade-modal').style.display = 'none';
+      }
+
+      document.getElementById('close-modal-btn').addEventListener('click', hideUpgradeModal);
+
+      document.getElementById('pay-btn').addEventListener('click', function () {
+        const number = '03285087289';
+        const msg = encodeURIComponent('Paid for premium plan');
+        window.open('https://wa.me/92' + number.replace(/^0/, '') + '?text=' + msg, '_blank');
+      });
+
+      document.getElementById('get-plus-top-btn').addEventListener('click', showUpgradeModal);
+    </script>
+
+  </body>
 </html>
