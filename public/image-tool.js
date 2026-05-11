@@ -10,7 +10,8 @@ const outputEl = document.getElementById("output");
 
 function buildUrl(prompt, width, height) {
   const cleanPrompt = encodeURIComponent(prompt);
-  return `https://image.pollinations.ai/prompt/${cleanPrompt}?width=${width}&height=${height}&seed=${Date.now()}&nologo=true`;
+  const seed = Math.floor(Math.random() * 99999999); // Har baar naya random seed
+  return `https://image.pollinations.ai/prompt/${cleanPrompt}?width=${width}&height=${height}&seed=${seed}&nologo=true&enhance=true`;
 }
 
 function buildFallbackUrl(prompt, width, height) {
@@ -18,23 +19,40 @@ function buildFallbackUrl(prompt, width, height) {
   return `https://placehold.co/${width}x${height}/0f172a/e2e8f0?text=${text}`;
 }
 
-function loadImageWithRetry(urls, index = 0) {
-  if (index >= urls.length) {
-    statusEl.textContent = "Image load fail hui, dobara try karo.";
-    outputEl.style.display = "none";
-    return;
-  }
+let retryCount = 0;
+const MAX_RETRIES = 3;
+
+function loadImageWithRetry(url, fallbackUrl) {
+  statusEl.textContent = retryCount > 0 
+    ? `Retry ${retryCount}/${MAX_RETRIES}... thoda wait karo ⏳` 
+    : "Image generate ho rahi hai... ⏳";
+
+  outputEl.style.display = "none";
 
   outputEl.onload = () => {
-    statusEl.textContent = index === urls.length - 1 ? "Fallback image ready." : "Image ready ✅";
+    statusEl.innerHTML = "Image ready ✅";
     outputEl.style.display = "block";
+    retryCount = 0;
   };
 
   outputEl.onerror = () => {
-    loadImageWithRetry(urls, index + 1);
+    if (retryCount < MAX_RETRIES) {
+      retryCount++;
+      // Naya seed ke saath dobara try
+      const newUrl = buildUrl(
+        decodeURIComponent(url.split("/prompt/")[1].split("?")[0]),
+        widthEl.value,
+        heightEl.value
+      );
+      imageUrlEl.value = newUrl;
+      setTimeout(() => loadImageWithRetry(newUrl, fallbackUrl), 2000);
+    } else {
+      statusEl.textContent = "Image load nahi hui — dobara Generate karo.";
+      retryCount = 0;
+    }
   };
 
-  outputEl.src = urls[index];
+  outputEl.src = url;
 }
 
 generateBtn.addEventListener("click", () => {
@@ -46,36 +64,49 @@ generateBtn.addEventListener("click", () => {
 
   const width = Number(widthEl.value) || 1024;
   const height = Number(heightEl.value) || 1024;
-  const firstTry = buildUrl(prompt, width, height);
-  const secondTry = buildUrl(prompt, width, height);
-  const thirdTry = buildUrl(prompt, width, height);
-  const fallback = buildFallbackUrl(prompt, width, height);
-  const urls = [firstTry, secondTry, thirdTry, fallback];
 
-  statusEl.textContent = "Image generate ho rahi hai...";
-  imageUrlEl.value = firstTry;
-  outputEl.style.display = "none";
-  loadImageWithRetry(urls);
+  retryCount = 0;
+  const url = buildUrl(prompt, width, height);
+  const fallback = buildFallbackUrl(prompt, width, height);
+
+  imageUrlEl.value = url;
+  loadImageWithRetry(url, fallback);
 });
 
 copyBtn.addEventListener("click", async () => {
   if (!imageUrlEl.value) {
-    statusEl.textContent = "Generate karke phir copy karo.";
+    statusEl.textContent = "Pehle image generate karo.";
     return;
   }
   await navigator.clipboard.writeText(imageUrlEl.value);
-  statusEl.textContent = "Image URL copied.";
+  statusEl.textContent = "URL copy ho gaya! ✅";
 });
 
 downloadBtn.addEventListener("click", () => {
-  if (!outputEl.src) {
-    statusEl.textContent = "Generate karke phir download karo.";
+  if (!outputEl.src || outputEl.style.display === "none") {
+    statusEl.textContent = "Pehle image generate karo.";
     return;
   }
-  const link = document.createElement("a");
-  link.href = outputEl.src;
-  link.download = "generated-image.png";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+
+  // Proxy se download karo taake CORS issue na aaye
+  fetch(outputEl.src)
+    .then(res => res.blob())
+    .then(blob => {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "ai-generated-image.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      statusEl.textContent = "Download shuru ho gaya! ✅";
+    })
+    .catch(() => {
+      // Fallback
+      const link = document.createElement("a");
+      link.href = outputEl.src;
+      link.target = "_blank";
+      link.download = "ai-generated-image.png";
+      link.click();
+    });
 });
+
