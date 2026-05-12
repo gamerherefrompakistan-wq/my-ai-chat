@@ -187,8 +187,8 @@ function showWelcomeScreen() {
   `;
 
   welcome.innerHTML = `
-    <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
-      <img src="/logo.svg" alt="Logo" style="height:64px; opacity:0.95;">
+    <div style="display:flex; flex-direction:row; align-items:center; justify-content:center; gap:14px;">
+      <img src="/logo.svg" alt="Logo" style="height:48px; background:transparent;">
       <p style="
         font-size: clamp(22px, 4vw, 32px);
         font-weight: 600;
