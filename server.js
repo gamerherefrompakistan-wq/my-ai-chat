@@ -511,7 +511,7 @@ app.post(
       );
 
       const response = await fetch(
-        "https://router.huggingface.co/hf-inference/models/genmo/mochi-1-preview",
+        "https://router.huggingface.co/hf-inference/models/ali-vilab/text-to-video-ms-1.7b",
         {
           method: "POST",
           headers: {
