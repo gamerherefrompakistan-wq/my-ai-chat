@@ -137,7 +137,7 @@ function checkUsage(identifier, isPremium) {
 }
 
 /* =========================
-   GEMINI AI — FIXED
+   GEMINI AI
 ========================= */
 const SYSTEM_PROMPT = `You are My AI Chat assistant. Reply in same language as user. Be helpful and friendly.`;
 
@@ -166,14 +166,12 @@ async function callGemini(messages) {
 
   const data = await response.json();
 
-  // Detailed logging for debugging
   console.log("[Gemini] Status:", response.status);
   if (!response.ok) {
     console.error("[Gemini] Error:", JSON.stringify(data));
     throw new Error(`Gemini API error ${response.status}: ${data?.error?.message || "Unknown error"}`);
   }
 
-  // Check for blocked content
   const candidate = data?.candidates?.[0];
   if (!candidate) {
     console.error("[Gemini] No candidates:", JSON.stringify(data));
@@ -239,32 +237,87 @@ app.get("/api/usage", (req, res) => {
 });
 
 /* =========================
-   VIDEO GENERATION
+   VIDEO GENERATION — FIXED
 ========================= */
 app.post("/api/generate-video", async (req, res) => {
   try {
     const { prompt, duration, model, aspectRatio } = req.body;
-    if (!prompt) return res.status(400).json({ error: "Prompt required" });
 
-    const key = process.env.POLLINATIONS_API_KEY;
-    if (!key) return res.status(503).json({ error: "POLLINATIONS_API_KEY not set" });
-
-    const upstream = await fetch("https://gen.pollinations.ai/video", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ prompt, duration: duration || 5, model: model || "wan-fast", aspectRatio: aspectRatio || "16:9" })
-    });
-
-    if (!upstream.ok) {
-      const text = await upstream.text();
-      return res.status(502).json({ error: "Video generation failed", detail: text.slice(0, 500) });
+    if (!prompt || prompt.trim().length < 4) {
+      return res.status(400).json({ error: "Prompt required (kam se kam 4 characters)" });
     }
 
+    const key = process.env.POLLINATIONS_API_KEY;
+    if (!key) {
+      return res.status(503).json({ error: "POLLINATIONS_API_KEY Railway pe set nahi hai" });
+    }
+
+    const selectedModel = model || "wan-fast";
+    const selectedRatio = aspectRatio || "16:9";
+    const selectedDuration = Number(duration) || 5;
+
+    // Pollinations video: GET /image/{prompt} with video model
+    const encodedPrompt = encodeURIComponent(prompt.trim());
+    const url = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${selectedModel}&aspectRatio=${selectedRatio}&duration=${selectedDuration}&output=mp4`;
+
+    console.log("[Video] Requesting:", url);
+
+    const upstream = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        Accept: "video/mp4, */*",
+      },
+      signal: AbortSignal.timeout(180_000), // 3 minutes timeout
+    });
+
+    console.log("[Video] Status:", upstream.status);
+    console.log("[Video] Content-Type:", upstream.headers.get("content-type"));
+
+    if (!upstream.ok) {
+      let errMsg = `Pollinations error ${upstream.status}`;
+      try {
+        const errText = await upstream.text();
+        console.error("[Video] Error body:", errText.slice(0, 500));
+        errMsg += `: ${errText.slice(0, 300)}`;
+      } catch (_) {}
+      return res.status(502).json({ error: errMsg });
+    }
+
+    const contentType = upstream.headers.get("content-type") || "video/mp4";
+
+    // Agar JSON response aaya (video URL ke saath)
+    if (contentType.includes("application/json")) {
+      const data = await upstream.json();
+      console.log("[Video] JSON response:", JSON.stringify(data));
+      const videoUrl = data?.url || data?.video_url || data?.output;
+      if (videoUrl) {
+        const videoRes = await fetch(videoUrl, {
+          signal: AbortSignal.timeout(120_000),
+        });
+        if (!videoRes.ok) {
+          return res.status(502).json({ error: "Video URL se download fail hua" });
+        }
+        res.setHeader("Content-Type", "video/mp4");
+        const buf = Buffer.from(await videoRes.arrayBuffer());
+        return res.send(buf);
+      }
+      return res.status(502).json({ error: "Video URL response mein nahi mila", detail: JSON.stringify(data) });
+    }
+
+    // Direct binary MP4 response
     res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Content-Disposition", "inline; filename=video.mp4");
     const buf = Buffer.from(await upstream.arrayBuffer());
+    console.log("[Video] Buffer size:", buf.length, "bytes");
     res.send(buf);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("[Video Error]", err.message);
+    if (err.name === "TimeoutError" || err.name === "AbortError") {
+      return res.status(504).json({ error: "Video generation timeout — 3 minute mein jawab nahi aaya. Dobara try karo." });
+    }
+    res.status(500).json({ error: err.message || "Server error" });
   }
 });
 
@@ -279,4 +332,3 @@ app.get("*", (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
-
