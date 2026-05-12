@@ -6,10 +6,8 @@ const loginBtn = document.getElementById("login-btn");
 const usernameEl = document.getElementById("username");
 const passwordEl = document.getElementById("password");
 
-// check login on load
 window.addEventListener("load", () => {
   const loggedIn = localStorage.getItem("loggedIn");
-
   if (loggedIn === "true") {
     loginModal.style.display = "none";
     document.body.classList.remove("locked");
@@ -19,22 +17,15 @@ window.addEventListener("load", () => {
   }
 });
 
-// login click
 loginBtn.addEventListener("click", () => {
   const user = usernameEl.value.trim();
   const pass = passwordEl.value.trim();
-
-  if (!user || !pass) {
-    alert("Username aur password required hai");
-    return;
-  }
-
-  // fake login (simple version)
+  if (!user || !pass) { alert("Username aur password required hai"); return; }
   localStorage.setItem("loggedIn", "true");
-
   loginModal.style.display = "none";
   document.body.classList.remove("locked");
 });
+
 const chatEl = document.getElementById("chat");
 const formEl = document.getElementById("chat-form");
 const promptEl = document.getElementById("prompt");
@@ -151,6 +142,7 @@ function loadSession(id) {
   currentSessionId = id;
   messages = [...session.messages];
   chatEl.innerHTML = "";
+  hideWelcomeScreen();
   messages.filter(m => m.role !== "system").forEach(m => {
     if (Array.isArray(m.content)) {
       const imgPart = m.content.find(p => p.type === "image_url");
@@ -168,12 +160,91 @@ function startNewChat() {
   currentSessionId = Date.now().toString();
   messages = [{ role: "system", content: getSystemPrompt() }];
   chatEl.innerHTML = "";
+  showWelcomeScreen();
   renderHistory();
 }
 
 newChatBtn.addEventListener("click", () => { startNewChat(); closeSidebar(); });
 
+// ─────────────────────────────
+// WELCOME SCREEN
+// ─────────────────────────────
+function showWelcomeScreen() {
+  // Remove old welcome if exists
+  const old = document.getElementById("welcome-screen");
+  if (old) old.remove();
+
+  const welcome = document.createElement("div");
+  welcome.id = "welcome-screen";
+  welcome.style.cssText = `
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    text-align: center;
+    pointer-events: none;
+    z-index: 1;
+  `;
+
+  welcome.innerHTML = `
+    <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+      <img src="/logo.svg" alt="Logo" style="height:64px; opacity:0.95;">
+      <p style="
+        font-size: clamp(22px, 4vw, 32px);
+        font-weight: 600;
+        color: #ffffff;
+        margin: 0;
+        letter-spacing: -0.5px;
+      ">What can I help you with today?</p>
+    </div>
+  `;
+
+  // Insert inside main app area
+  const appEl = document.querySelector(".app");
+  if (appEl) {
+    appEl.style.position = "relative";
+    appEl.appendChild(welcome);
+  }
+}
+
+function hideWelcomeScreen() {
+  const welcome = document.getElementById("welcome-screen");
+  if (welcome) welcome.remove();
+}
+
+// ─────────────────────────────
+// UPGRADE MODAL
+// ─────────────────────────────
+function showUpgradeModal() {
+  const modal = document.getElementById("upgrade-modal");
+  if (modal) modal.style.display = "flex";
+}
+
+function hideUpgradeModal() {
+  const modal = document.getElementById("upgrade-modal");
+  if (modal) modal.style.display = "none";
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const closeModalBtn = document.getElementById("close-modal-btn");
+  const payBtn = document.getElementById("pay-btn");
+
+  if (closeModalBtn) closeModalBtn.addEventListener("click", hideUpgradeModal);
+
+  if (payBtn) {
+    payBtn.addEventListener("click", function () {
+      const number = "03285087289";
+      const msg = encodeURIComponent(
+        "Hello! I have paid Rs. 300 via JazzCash/EasyPaisa for the Premium plan. Please activate my account. Thank you!"
+      );
+      window.open("https://wa.me/92" + number.replace(/^0/, "") + "?text=" + msg, "_blank");
+    });
+  }
+});
+
+// ─────────────────────────────
 // PARTICLES
+// ─────────────────────────────
 (function initParticles() {
   const canvas = document.createElement("canvas");
   canvas.id = "particles-canvas";
@@ -201,7 +272,9 @@ newChatBtn.addEventListener("click", () => { startNewChat(); closeSidebar(); });
   draw();
 })();
 
+// ─────────────────────────────
 // IMAGE ATTACH
+// ─────────────────────────────
 const fileInput = document.getElementById("file-input");
 const attachBtn = document.getElementById("attach-btn");
 const imagePreviewWrap = document.getElementById("image-preview-wrap");
@@ -228,7 +301,9 @@ removeImgBtn.addEventListener("click", () => {
   imagePreview.src = "";
 });
 
+// ─────────────────────────────
 // CHAT
+// ─────────────────────────────
 let loadingDiv = null;
 
 function showLoadingDots() {
@@ -244,6 +319,7 @@ function removeLoadingDots() {
 }
 
 function appendMessage(role, content, animate = false, imageDataUrl = null) {
+  hideWelcomeScreen();
   const div = document.createElement("div");
   div.className = `msg ${role === "user" ? "user" : "assistant"}`;
   if (imageDataUrl) {
@@ -312,6 +388,15 @@ formEl.addEventListener("submit", async (event) => {
       body: JSON.stringify({ messages })
     });
     const data = await res.json();
+
+    // Limit reached — show upgrade modal
+    if (res.status === 429 || data.error === "limit_reached") {
+      removeLoadingDots();
+      showUpgradeModal();
+      setLoading(false);
+      return;
+    }
+
     if (!res.ok) throw new Error(data.error || "Request failed");
     appendMessage("assistant", data.reply, true);
     messages.push({ role: "assistant", content: data.reply });
@@ -326,3 +411,4 @@ formEl.addEventListener("submit", async (event) => {
 
 startNewChat();
 renderHistory();
+
