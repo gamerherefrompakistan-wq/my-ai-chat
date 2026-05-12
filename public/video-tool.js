@@ -151,7 +151,7 @@ generateBtn.addEventListener("click", async () => {
         aspectRatio: selectedRatio,
 
         // ✅ FIXED MODEL
-        model: "wan-fast",
+        model: "animate-diff",
 
         audio: Boolean(audioEl.checked)
       })
