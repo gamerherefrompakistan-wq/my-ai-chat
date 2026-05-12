@@ -37,7 +37,7 @@
     </radialGradient>
   </defs>
   <style>
-    .bg { fill: #050505; }
+    
     .glow1 { animation: gPulse 3s ease-in-out infinite; }
     .glow2 { animation: gPulse 3s ease-in-out 0.5s infinite; }
     .glow3 { animation: gPulse2 3s ease-in-out 1s infinite; }
@@ -50,7 +50,7 @@
     @keyframes gPulse2 { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
     @keyframes draw { 0% { stroke-dashoffset: 980; opacity: 0.5; } 65% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
   </style>
-  <rect width="680" height="400" class="bg" rx="20"/>
+  
   <ellipse class="glow1" cx="270" cy="190" rx="130" ry="90" fill="url(#glowPurple)"/>
   <ellipse class="glow2" cx="410" cy="190" rx="130" ry="90" fill="url(#glowOrange)"/>
   <ellipse class="glow3" cx="270" cy="220" rx="110" ry="70" fill="url(#glowPink)"/>
