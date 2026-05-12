@@ -1,605 +1,362 @@
 const express = require("express");
 const path = require("path");
 const dotenv = require("dotenv");
-const crypto = require("crypto");
-const fs = require("fs");
+const OpenAI = require("openai");
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+const host = process.env.HOST || "0.0.0.0";
 
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-/* =========================
-   USER DATABASE (JSON FILE)
-========================= */
-const DB_PATH = path.join(__dirname, "users.json");
-
-function loadUsers() {
-  try {
-    if (fs.existsSync(DB_PATH)) {
-      return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
-    }
-  } catch (e) {}
-
-  return {};
+let client = null;
+function getClient() {
+  if (client) return client;
+  if (!process.env.OPENAI_API_KEY) return null;
+  client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return client;
 }
 
-function saveUsers(users) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2));
+function getLastUserMessage(messages) {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i]?.role === "user") return String(messages[i].content || "");
+  }
+  return "";
 }
 
-function hashPassword(password) {
-  return crypto
-    .createHash("sha256")
-    .update(password + "myaichat_salt")
-    .digest("hex");
+function demoReply(userText) {
+  return `Demo mode reply: Aapka message mila - "${userText}". OpenAI quota/billing issue ki wajah se app abhi local demo mode me chal raha hai.`;
 }
 
-function generateToken(userId) {
-  const payload = {
-    userId,
-    exp: Date.now() + 30 * 24 * 60 * 60 * 1000
-  };
-
-  const data = Buffer.from(JSON.stringify(payload)).toString("base64");
-
-  const sig = crypto
-    .createHmac(
-      "sha256",
-      process.env.JWT_SECRET || "myaichat_secret"
-    )
-    .update(data)
-    .digest("hex");
-
-  return `${data}.${sig}`;
-}
-
-function verifyToken(token) {
-  try {
-    const [data, sig] = token.split(".");
-
-    const expectedSig = crypto
-      .createHmac(
-        "sha256",
-        process.env.JWT_SECRET || "myaichat_secret"
-      )
-      .update(data)
-      .digest("hex");
-
-    if (sig !== expectedSig) return null;
-
-    const payload = JSON.parse(
-      Buffer.from(data, "base64").toString()
-    );
-
-    if (payload.exp < Date.now()) return null;
-
-    return payload;
-  } catch (e) {
-    return null;
-  }
-}
-
-function getUserFromReq(req) {
-  const auth = req.headers.authorization;
-
-  if (!auth || !auth.startsWith("Bearer "))
-    return null;
-
-  const token = auth.slice(7);
-
-  const payload = verifyToken(token);
-
-  if (!payload) return null;
-
-  const users = loadUsers();
-
-  return users[payload.userId] || null;
-}
-
-/* =========================
-   AUTH ROUTES
-========================= */
-
-app.post("/api/auth/signup", (req, res) => {
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({
-      error: "Sab fields required hain"
-    });
-  }
-
-  if (password.length < 6) {
-    return res.status(400).json({
-      error:
-        "Password kam se kam 6 characters ka hona chahiye"
-    });
-  }
-
-  const users = loadUsers();
-
-  const existing = Object.values(users).find(
-    (u) => u.email === email.toLowerCase()
-  );
-
-  if (existing) {
-    return res.status(400).json({
-      error: "Ye email already registered hai"
-    });
-  }
-
-  const userId = crypto
-    .randomBytes(16)
-    .toString("hex");
-
-  users[userId] = {
-    id: userId,
-    name,
-    email: email.toLowerCase(),
-    password: hashPassword(password),
-    plan: "free",
-    createdAt: new Date().toISOString(),
-    avatar: name.charAt(0).toUpperCase()
-  };
-
-  saveUsers(users);
-
-  const token = generateToken(userId);
-
-  res.json({
-    token,
-    user: {
-      id: userId,
-      name,
-      email: email.toLowerCase(),
-      plan: "free",
-      avatar: name.charAt(0).toUpperCase()
-    }
-  });
-});
-
-app.post("/api/auth/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({
-      error: "Email aur password required hain"
-    });
-  }
-
-  const users = loadUsers();
-
-  const user = Object.values(users).find(
-    (u) => u.email === email.toLowerCase()
-  );
-
-  if (
-    !user ||
-    user.password !== hashPassword(password)
-  ) {
-    return res.status(401).json({
-      error: "Email ya password galat hai"
-    });
-  }
-
-  const token = generateToken(user.id);
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      plan: user.plan,
-      avatar:
-        user.avatar ||
-        user.name.charAt(0).toUpperCase()
-    }
-  });
-});
-
-app.get("/api/auth/me", (req, res) => {
-  const user = getUserFromReq(req);
-
-  if (!user) {
-    return res.status(401).json({
-      error: "Not authenticated"
-    });
-  }
-
-  res.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      plan: user.plan,
-      avatar:
-        user.avatar ||
-        user.name.charAt(0).toUpperCase()
-    }
-  });
-});
-
-/* =========================
-   SUBSCRIPTION SYSTEM
-========================= */
-
-const FREE_DAILY_LIMIT = 10;
-
-const usageStore = {};
-
-function getClientIP(req) {
-  return (
-    req.headers["x-forwarded-for"]
-      ?.split(",")[0]
-      ?.trim() ||
-    req.socket?.remoteAddress ||
-    "unknown"
-  );
-}
-
-function getToday() {
-  return new Date()
-    .toISOString()
-    .split("T")[0];
-}
-
-function checkUsage(identifier, isPremium) {
-  if (isPremium) {
-    return {
-      allowed: true,
-      premium: true
-    };
-  }
-
-  const today = getToday();
-
-  if (
-    !usageStore[identifier] ||
-    usageStore[identifier].date !== today
-  ) {
-    usageStore[identifier] = {
-      count: 0,
-      date: today
-    };
-  }
-
-  const user = usageStore[identifier];
-
-  if (user.count >= FREE_DAILY_LIMIT) {
-    return {
-      allowed: false,
-      premium: false
-    };
-  }
-
-  user.count++;
-
-  return {
-    allowed: true,
-    premium: false,
-    remaining:
-      FREE_DAILY_LIMIT - user.count
-  };
-}
-
-/* =========================
-   GEMINI AI
-========================= */
-
-const SYSTEM_PROMPT = `
-You are My AI Chat assistant.
-Reply in same language as user.
-Be helpful and friendly.
+const ASSISTANT_SYSTEM_PROMPT = `
+You are My AI Chat, a helpful multilingual assistant.
+Rules:
+- Reply in the SAME language/script as the user's latest message.
+- Correct obvious spelling/grammar mistakes in your own response.
+- Keep answers clear, natural, and concise unless user asks for detail.
+- For poems, stories, or creative content, write polished and error-free text.
 `;
 
-async function callGemini(messages) {
-  const apiKey =
-    process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error(
-      "GEMINI_API_KEY set nahi hai Railway pe"
-    );
-  }
-
-  const contents = messages
-    .filter((m) => m.role !== "system")
-    .map((m) => ({
+function prepareModelMessages(messages) {
+  const cleanMessages = messages
+    .filter((msg) => msg && typeof msg.content === "string")
+    .map((msg) => ({
       role:
-        m.role === "assistant"
-          ? "model"
-          : "user",
-      parts: [
-        {
-          text:
-            typeof m.content === "string"
-              ? m.content
-              : JSON.stringify(m.content)
-        }
-      ]
-    }));
+        msg.role === "system" || msg.role === "assistant" ? msg.role : "user",
+      content: String(msg.content).trim()
+    }))
+    .filter((msg) => msg.content.length > 0);
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json"
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [
-            {
-              text: SYSTEM_PROMPT
-            }
-          ]
-        },
-        contents
-      })
-    }
-  );
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    console.error(
-      "[Gemini Error]",
-      JSON.stringify(data)
-    );
-
-    throw new Error(
-      data?.error?.message ||
-        "Gemini API error"
-    );
-  }
-
-  const text =
-    data?.candidates?.[0]?.content
-      ?.parts?.[0]?.text;
-
-  if (!text) {
-    throw new Error(
-      "Gemini response empty"
-    );
-  }
-
-  return text;
+  const recentMessages = cleanMessages.slice(-8);
+  return [{ role: "system", content: ASSISTANT_SYSTEM_PROMPT }, ...recentMessages];
 }
 
-/* =========================
-   CHAT API
-========================= */
+async function getOllamaReply(messages) {
+  const baseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+  const preferredModel = process.env.OLLAMA_MODEL || "llama3.2";
+  const ollamaMessages = prepareModelMessages(messages);
+
+  const response = await fetch(`${baseUrl}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: preferredModel,
+      messages: ollamaMessages,
+      stream: false,
+      options: {
+        temperature: 0.3,
+        num_predict: 220,
+        num_ctx: 2048
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Ollama error: ${response.status} ${err}`);
+  }
+
+  const data = await response.json();
+  return data?.message?.content || "No response";
+}
+
+const POLLINATIONS_MAX_SEED = 2147483647;
+
+function toPollinationsSeed(value) {
+  const fallback = Date.now() % POLLINATIONS_MAX_SEED;
+  let n = Math.floor(Number(value));
+  if (!Number.isFinite(n)) return fallback;
+  n = Math.abs(n) % POLLINATIONS_MAX_SEED;
+  return n === 0 ? fallback || 1 : n;
+}
+
+function normalizePollinationsKey(raw) {
+  if (!raw || typeof raw !== "string") return "";
+  let k = raw.trim();
+  if (k.startsWith("Bearer ")) k = k.slice(7).trim();
+  if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+    k = k.slice(1, -1).trim();
+  }
+  const lower = k.toLowerCase();
+  if (lower.startsWith("pollinations_api_key=")) {
+    k = k.slice("pollinations_api_key=".length).trim();
+  }
+  return k;
+}
+
+const VIDEO_MODEL_FALLBACKS = [
+  "seedance",
+  "ltx-2",
+  "p-video",
+  "wan",
+  "wan-fast",
+  "seedance-pro",
+  "veo",
+  "nova-reel",
+  "grok-video-pro"
+];
+
+async function pollinationsGenerateVideoOnce(prompt, opts, model) {
+  const key = normalizePollinationsKey(process.env.POLLINATIONS_API_KEY);
+  if (!key) {
+    const err = new Error("MISSING_POLLINATIONS_KEY");
+    err.code = "MISSING_POLLINATIONS_KEY";
+    throw err;
+  }
+
+  const cleanPrompt = String(prompt || "")
+    .trim()
+    .replace(/\s+/g, " ");
+  const duration = Math.min(10, Math.max(1, Number(opts.duration) || 5));
+  const aspectRatio =
+    opts.aspectRatio === "9:16" || opts.aspectRatio === "16:9"
+      ? opts.aspectRatio
+      : "16:9";
+  const seed = toPollinationsSeed(opts.seed ?? Date.now());
+  const audio =
+    opts.audio === true || String(opts.audio || "").toLowerCase() === "true";
+
+  const authHeaders = {
+    Authorization: `Bearer ${key}`,
+    Accept: "video/mp4,*/*"
+  };
+
+  const postBody = {
+    prompt: cleanPrompt,
+    duration,
+    aspectRatio,
+    model,
+    seed,
+    audio
+  };
+
+  let upstream = await fetch("https://gen.pollinations.ai/video", {
+    method: "POST",
+    headers: {
+      ...authHeaders,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(postBody)
+  });
+
+  const maxGetPrompt = 900;
+  const shortPrompt =
+    cleanPrompt.length > maxGetPrompt
+      ? `${cleanPrompt.slice(0, maxGetPrompt)}…`
+      : cleanPrompt;
+
+  const tryGet = async () => {
+    const url = `https://gen.pollinations.ai/video/${encodeURIComponent(
+      shortPrompt
+    )}?duration=${duration}&aspectRatio=${encodeURIComponent(
+      aspectRatio
+    )}&model=${encodeURIComponent(model)}&seed=${seed}&audio=${
+      audio ? "true" : "false"
+    }&key=${encodeURIComponent(key)}`;
+    return fetch(url, { method: "GET", headers: authHeaders });
+  };
+
+  if (upstream.ok) return upstream;
+
+  const getRes = await tryGet();
+  return getRes;
+}
+
+function shouldRetryVideoWithOtherModel(status, bodyText) {
+  if (status === 402) return false;
+  const t = String(bodyText || "");
+  return /not supported|hf-inference|model not supported|invalid model|unknown model/i.test(
+    t
+  );
+}
+
+async function pollinationsGenerateVideo(prompt, opts) {
+  const preferred =
+    typeof opts.model === "string" && opts.model.trim()
+      ? opts.model.trim()
+      : "seedance";
+
+  const tryModels = [preferred, ...VIDEO_MODEL_FALLBACKS].filter(
+    (m, i, arr) => m && arr.indexOf(m) === i
+  );
+
+  let lastResponse = null;
+  let lastText = "";
+
+  for (let i = 0; i < tryModels.length; i += 1) {
+    const model = tryModels[i];
+    const res = await pollinationsGenerateVideoOnce(prompt, opts, model);
+    lastResponse = res;
+
+    if (res.ok) return res;
+
+    lastText = await res.text();
+
+    if (res.status === 402 || /insufficient balance|pollen|payment_required/i.test(lastText)) {
+      return new Response(lastText, {
+        status: res.status,
+        headers: { "content-type": res.headers.get("content-type") || "application/json" }
+      });
+    }
+
+    const retry = shouldRetryVideoWithOtherModel(res.status, lastText);
+    if (!retry || i === tryModels.length - 1) {
+      return new Response(lastText, {
+        status: res.status,
+        headers: { "content-type": res.headers.get("content-type") || "application/json" }
+      });
+    }
+  }
+
+  return (
+    lastResponse ||
+    new Response(lastText || '{"error":"Video generation failed"}', { status: 502 })
+  );
+}
+
+app.post("/api/generate-video", async (req, res) => {
+  try {
+    const { prompt, duration, model, aspectRatio, audio } = req.body || {};
+    if (!prompt || typeof prompt !== "string" || prompt.trim().length < 4) {
+      return res.status(400).json({ error: "Prompt required (at least 4 characters)" });
+    }
+
+    let upstream;
+    try {
+      upstream = await pollinationsGenerateVideo(prompt, {
+        duration,
+        model,
+        aspectRatio,
+        audio,
+        seed: toPollinationsSeed(Date.now())
+      });
+    } catch (e) {
+      if (e.code === "MISSING_POLLINATIONS_KEY") {
+        return res.status(503).json({
+          error:
+            "Server par POLLINATIONS_API_KEY set nahi hai. enter.pollinations.ai se free secret key banwao aur Railway/hosting env me lagao.",
+          hint: "https://enter.pollinations.ai"
+        });
+      }
+      throw e;
+    }
+
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      console.error("Pollinations video error:", upstream.status, text);
+      return res.status(502).json({
+        error: `Video generation failed (${upstream.status})`,
+        detail: text.slice(0, 800)
+      });
+    }
+
+    res.setHeader("Content-Type", "video/mp4");
+    res.setHeader("Cache-Control", "no-store");
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    res.send(buf);
+  } catch (error) {
+    console.error("generate-video:", error?.message || error);
+    const message =
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      "Unknown server error";
+    res.status(500).json({ error: message });
+  }
+});
 
 app.post("/api/chat", async (req, res) => {
   try {
     const { messages } = req.body;
-
-    if (
-      !messages ||
-      !Array.isArray(messages)
-    ) {
-      return res.status(400).json({
-        error:
-          "Messages array required hai"
-      });
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: "messages array required" });
     }
 
-    const user = getUserFromReq(req);
-
-    const identifier = user
-      ? user.id
-      : getClientIP(req);
-
-    const isPremium =
-      user?.plan === "premium";
-
-    const usage = checkUsage(
-      identifier,
-      isPremium
-    );
-
-    if (!usage.allowed) {
-      return res.status(429).json({
-        error: "limit_reached",
-        message:
-          "Aapki free limit khatam ho gayi."
-      });
+    const userText = getLastUserMessage(messages);
+    const useOllama = String(process.env.USE_OLLAMA || "").toLowerCase() === "true";
+    const openai = getClient();
+    if (useOllama || !openai) {
+      try {
+        const ollamaText = await getOllamaReply(messages);
+        return res.json({ reply: ollamaText });
+      } catch (error) {
+        console.error("Ollama fallback error:", error?.message || error);
+        return res.json({
+          reply: `Ollama error: ${error?.message || "Unknown Ollama error"}`
+        });
+      }
     }
 
-    const reply =
-      await callGemini(messages);
-
-    res.json({
-      reply,
-      usage
-    });
-  } catch (err) {
-    console.error(
-      "[Chat Error]",
-      err.message
-    );
-
-    res.status(500).json({
-      error:
-        err.message ||
-        "Server error aa gaya"
-    });
-  }
-});
-
-/* =========================
-   USAGE CHECK
-========================= */
-
-app.get("/api/usage", (req, res) => {
-  const user = getUserFromReq(req);
-
-  const identifier = user
-    ? user.id
-    : getClientIP(req);
-
-  const isPremium =
-    user?.plan === "premium";
-
-  if (isPremium) {
-    return res.json({
-      plan: "premium",
-      remaining: "unlimited"
-    });
-  }
-
-  const today = getToday();
-
-  const data =
-    usageStore[identifier];
-
-  const used =
-    data?.date === today
-      ? data.count
-      : 0;
-
-  res.json({
-    plan: "free",
-    used,
-    remaining: Math.max(
-      0,
-      FREE_DAILY_LIMIT - used
-    ),
-    total: FREE_DAILY_LIMIT
-  });
-});
-
-/* =========================
-   VIDEO GENERATION
-========================= */
-
-app.post(
-  "/api/generate-video",
-  async (req, res) => {
+    let response;
     try {
-      const { prompt } = req.body;
-
-      if (
-        !prompt ||
-        prompt.trim().length < 4
-      ) {
-        return res.status(400).json({
-          error:
-            "Prompt required"
-        });
-      }
-
-      const HF_TOKEN =
-        process.env.HF_TOKEN;
-
-      if (!HF_TOKEN) {
-        return res.status(500).json({
-          error:
-            "HF_TOKEN missing"
-        });
-      }
-
-      console.log(
-        "[HF] Prompt:",
-        prompt
-      );
-
-      const response = await fetch(
-        "https://router.huggingface.co/hf-inference/models/ali-vilab/text-to-video-ms-1.7b",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${HF_TOKEN}`,
-            "Content-Type":
-              "application/json"
-          },
-          body: JSON.stringify({
-            inputs: prompt
-          }),
-          signal:
-            AbortSignal.timeout(
-              300000
-            )
-        }
-      );
-
-      console.log(
-        "[HF] Status:",
-        response.status
-      );
-
-      if (!response.ok) {
-        const err =
-          await response.text();
-
-        console.error(
-          "[HF ERROR]",
-          err
-        );
-
-        return res.status(500).json({
-          error: err
-        });
-      }
-
-      const buffer = Buffer.from(
-        await response.arrayBuffer()
-      );
-
-      res.setHeader(
-        "Content-Type",
-        "video/mp4"
-      );
-
-      res.setHeader(
-        "Content-Disposition",
-        "inline; filename=generated-video.mp4"
-      );
-
-      res.send(buffer);
-    } catch (err) {
-      console.error(
-        "[HF VIDEO ERROR]",
-        err
-      );
-
-      res.status(500).json({
-        error:
-          err.message ||
-          "Server error"
+      const modelMessages = prepareModelMessages(messages);
+      response = await openai.chat.completions.create({
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        messages: modelMessages,
+        temperature: 0.4
       });
-    }
-  }
-);
+    } catch (apiError) {
+      const statusCode =
+        apiError?.status || apiError?.response?.status || apiError?.code;
+      const quotaMessage = String(apiError?.message || "").toLowerCase();
+      const isQuotaError =
+        statusCode === 429 ||
+        quotaMessage.includes("quota") ||
+        quotaMessage.includes("billing");
 
-/* =========================
-   FRONTEND ROUTE
-========================= */
+      if (isQuotaError) {
+        try {
+          const ollamaText = await getOllamaReply(messages);
+          return res.json({ reply: ollamaText });
+        } catch (_error) {
+          return res.json({
+            reply: demoReply(userText)
+          });
+        }
+      }
+      throw apiError;
+    }
+
+    const text = response.choices?.[0]?.message?.content || "No response";
+    return res.json({ reply: text });
+  } catch (error) {
+    const message =
+      error?.response?.data?.error?.message ||
+      error?.message ||
+      "Unknown server error";
+    return res.status(500).json({ error: message });
+  }
+});
 
 app.get("*", (req, res) => {
   if (path.extname(req.path)) {
-    return res
-      .status(404)
-      .send("Not found");
+    return res.status(404).type("text/plain").send("Not found");
   }
-
-  res.sendFile(
-    path.join(
-      __dirname,
-      "public",
-      "index.html"
-    )
-  );
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(port, () => {
-  console.log(
-    `Server running on http://localhost:${port}`
-  );
+app.listen(port, host, () => {
+  console.log(`Server running at http://${host}:${port}`);
 });
