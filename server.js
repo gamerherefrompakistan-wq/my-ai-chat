@@ -237,87 +237,95 @@ app.get("/api/usage", (req, res) => {
 });
 
 /* =========================
-   VIDEO GENERATION — FIXED
+   HUGGINGFACE VIDEO GENERATION
 ========================= */
 app.post("/api/generate-video", async (req, res) => {
   try {
-    const { prompt, duration, model, aspectRatio } = req.body;
+    const { prompt } = req.body;
 
     if (!prompt || prompt.trim().length < 4) {
-      return res.status(400).json({ error: "Prompt required (kam se kam 4 characters)" });
+      return res.status(400).json({
+        error: "Prompt required (minimum 4 characters)"
+      });
     }
 
-    const key = process.env.POLLINATIONS_API_KEY;
-    if (!key) {
-      return res.status(503).json({ error: "POLLINATIONS_API_KEY Railway pe set nahi hai" });
+    const HF_TOKEN = process.env.HF_TOKEN;
+
+    if (!HF_TOKEN) {
+      return res.status(500).json({
+        error: "HF_TOKEN Railway variables me set nahi hai"
+      });
     }
 
-    const selectedModel = model || "wan-fast";
-    const selectedRatio = aspectRatio || "16:9";
-    const selectedDuration = Number(duration) || 5;
+    console.log("[HF] Generating video:", prompt);
 
-    // Pollinations video: GET /image/{prompt} with video model
-    const encodedPrompt = encodeURIComponent(prompt.trim());
-    const url = `https://gen.pollinations.ai/image/${encodedPrompt}?model=${selectedModel}&aspectRatio=${selectedRatio}&duration=${selectedDuration}&output=mp4`;
+    // HuggingFace model
+    const MODEL = "genmo/mochi-1-preview";
 
-    console.log("[Video] Requesting:", url);
-
-    const upstream = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        Accept: "video/mp4, */*",
-      },
-      signal: AbortSignal.timeout(180_000), // 3 minutes timeout
-    });
-
-    console.log("[Video] Status:", upstream.status);
-    console.log("[Video] Content-Type:", upstream.headers.get("content-type"));
-
-    if (!upstream.ok) {
-      let errMsg = `Pollinations error ${upstream.status}`;
-      try {
-        const errText = await upstream.text();
-        console.error("[Video] Error body:", errText.slice(0, 500));
-        errMsg += `: ${errText.slice(0, 300)}`;
-      } catch (_) {}
-      return res.status(502).json({ error: errMsg });
-    }
-
-    const contentType = upstream.headers.get("content-type") || "video/mp4";
-
-    // Agar JSON response aaya (video URL ke saath)
-    if (contentType.includes("application/json")) {
-      const data = await upstream.json();
-      console.log("[Video] JSON response:", JSON.stringify(data));
-      const videoUrl = data?.url || data?.video_url || data?.output;
-      if (videoUrl) {
-        const videoRes = await fetch(videoUrl, {
-          signal: AbortSignal.timeout(120_000),
-        });
-        if (!videoRes.ok) {
-          return res.status(502).json({ error: "Video URL se download fail hua" });
-        }
-        res.setHeader("Content-Type", "video/mp4");
-        const buf = Buffer.from(await videoRes.arrayBuffer());
-        return res.send(buf);
+    const response = await fetch(
+      `https://api-inference.huggingface.co/models/${MODEL}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HF_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inputs: prompt,
+          parameters: {
+            num_frames: 49,
+            guidance_scale: 7.5,
+            num_inference_steps: 30
+          }
+        }),
+        signal: AbortSignal.timeout(300000) // 5 min
       }
-      return res.status(502).json({ error: "Video URL response mein nahi mila", detail: JSON.stringify(data) });
+    );
+
+    console.log("[HF] Status:", response.status);
+
+    // Error handling
+    if (!response.ok) {
+      const errText = await response.text();
+
+      console.error("[HF ERROR]", errText);
+
+      return res.status(500).json({
+        error: "HuggingFace video generation failed",
+        detail: errText
+      });
     }
 
-    // Direct binary MP4 response
+    const contentType = response.headers.get("content-type");
+
+    console.log("[HF] Content-Type:", contentType);
+
+    // Video response
+    const buffer = Buffer.from(await response.arrayBuffer());
+
     res.setHeader("Content-Type", "video/mp4");
-    res.setHeader("Content-Disposition", "inline; filename=video.mp4");
-    const buf = Buffer.from(await upstream.arrayBuffer());
-    console.log("[Video] Buffer size:", buf.length, "bytes");
-    res.send(buf);
+    res.setHeader(
+      "Content-Disposition",
+      "inline; filename=generated-video.mp4"
+    );
+
+    res.send(buffer);
 
   } catch (err) {
-    console.error("[Video Error]", err.message);
-    if (err.name === "TimeoutError" || err.name === "AbortError") {
-      return res.status(504).json({ error: "Video generation timeout — 3 minute mein jawab nahi aaya. Dobara try karo." });
+    console.error("[HF VIDEO ERROR]", err);
+
+    if (
+      err.name === "AbortError" ||
+      err.name === "TimeoutError"
+    ) {
+      return res.status(504).json({
+        error: "Video generation timeout. Dobara try karo."
+      });
     }
-    res.status(500).json({ error: err.message || "Server error" });
+
+    res.status(500).json({
+      error: err.message || "Server error"
+    });
   }
 });
 
