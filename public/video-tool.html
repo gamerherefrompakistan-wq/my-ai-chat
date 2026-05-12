@@ -3,233 +3,133 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Video Generator — My AI Chat</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+    <title>Prompt to Video Generator</title>
     <link rel="stylesheet" href="./video-tool.css" />
   </head>
   <body>
-    <!-- Animated background -->
-    <div class="bg-orbs">
-      <div class="orb orb1"></div>
-      <div class="orb orb2"></div>
-      <div class="orb orb3"></div>
-    </div>
-    <div class="noise"></div>
+    <main class="tool">
+      <header class="head">
+        <h1>Prompt to Video</h1>
+        <a href="./index.html">Back to Chat</a>
+      </header>
 
-    <div class="app">
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <div class="logo">
-          <div class="logo-icon">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="url(#lg)" stroke-width="1.5"/><path d="M9 8l6 4-6 4V8z" fill="url(#lg2)"/><defs><linearGradient id="lg" x1="2" y1="2" x2="22" y2="22"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#ec4899"/></linearGradient><linearGradient id="lg2" x1="9" y1="8" x2="15" y2="16"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs></svg>
+      <section class="notice notice-free">
+        <strong>100% free option neeche hai</strong> — Pexels / Pixabay se stock clips + CapCut steps.
+        Upar wala AI video Pollinations <strong>pollen</strong> mangta hai (402 = balance khatam).
+      </section>
+
+      <section class="notice">
+        Ye tool server se video banwata hai — production / Railway pe
+        <strong>POLLINATIONS_API_KEY</strong> env variable lagani hogi. Zyada behtar:
+        <strong>secret</strong> key <span class="mono">sk_...</span> (server deploy ke liye).
+        Agar <span class="mono">400</span> error aaye to pehle <strong>chhota prompt</strong> try karo,
+        agar <strong>hf-inference / model not supported</strong> aaye to server auto dusre model try karega;
+        default ab <strong>seedance</strong> hai.
+        Key: <a href="https://enter.pollinations.ai" target="_blank" rel="noopener">enter.pollinations.ai</a>
+      </section>
+
+      <section class="card">
+        <label for="prompt">Video prompt</label>
+        <textarea
+          id="prompt"
+          rows="4"
+          placeholder="e.g. slow drone shot over futuristic city at sunset, cinematic, 4k look"
+        ></textarea>
+
+        <div class="row">
+          <div>
+            <label for="duration">Duration (seconds)</label>
+            <input id="duration" type="number" min="1" max="10" value="5" />
           </div>
-          <span>My AI Chat</span>
+          <div>
+            <label for="aspect">Aspect ratio</label>
+            <select id="aspect">
+              <option value="16:9">16:9 (landscape)</option>
+              <option value="9:16">9:16 (shorts / reel)</option>
+            </select>
+          </div>
         </div>
 
-        <nav class="nav">
-          <a href="./index.html" class="nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 12h8M12 8l4 4-4 4"/></svg>
-            Chat
-          </a>
-          <a href="./image-tool.html" class="nav-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-            Image Generator
-          </a>
-          <a href="./video-tool.html" class="nav-item active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-            Video Generator
-          </a>
-        </nav>
+        <div class="row-full">
+          <label class="check">
+            <input id="audio" type="checkbox" />
+            <span>Background audio / soundtrack (agar model support kare)</span>
+          </label>
+        </div>
 
-        <div class="sidebar-footer">
-          <div class="model-badge">
-            <span class="dot"></span>
-            Pollinations AI
+        <div class="row-full">
+          <div>
+            <label for="model">Model</label>
+            <select id="model">
+              <option value="seedance">seedance (recommended)</option>
+              <option value="ltx-2">ltx-2</option>
+              <option value="p-video">p-video</option>
+              <option value="wan">wan</option>
+              <option value="wan-fast">wan-fast</option>
+              <option value="seedance-pro">seedance-pro</option>
+              <option value="veo">veo</option>
+            </select>
           </div>
         </div>
-      </aside>
 
-      <!-- Main content -->
-      <main class="main">
-        <header class="topbar">
-          <div class="topbar-left">
-            <h1>Video <span class="grad-text">Generator</span></h1>
-            <p>Text se cinematic video banao AI se</p>
-          </div>
-          <a href="./index.html" class="back-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-            Back to Chat
-          </a>
-        </header>
-
-        <div class="workspace">
-          <!-- Left panel: controls -->
-          <section class="controls-panel">
-
-            <div class="field">
-              <label class="field-label">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Video Prompt
-              </label>
-              <textarea id="prompt" rows="5" placeholder="e.g. slow drone shot over futuristic city at sunset, cinematic, 4k look, golden hour lighting..."></textarea>
-              <div class="char-count"><span id="charCount">0</span> characters</div>
-            </div>
-
-            <div class="field-row">
-              <div class="field">
-                <label class="field-label">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  Duration
-                </label>
-                <div class="duration-control">
-                  <button class="dur-btn" id="durMinus">−</button>
-                  <input id="duration" type="number" min="1" max="10" value="5" />
-                  <button class="dur-btn" id="durPlus">+</button>
-                  <span class="dur-label">sec</span>
-                </div>
-              </div>
-
-              <div class="field">
-                <label class="field-label">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
-                  Aspect Ratio
-                </label>
-                <div class="ratio-btns">
-                  <button class="ratio-btn active" data-value="16:9">
-                    <span class="ratio-icon wide"></span>
-                    16:9
-                  </button>
-                  <button class="ratio-btn" data-value="9:16">
-                    <span class="ratio-icon tall"></span>
-                    9:16
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="field-label">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                AI Model
-              </label>
-              <div class="model-grid">
-                <button class="model-btn active" data-value="wan-fast">
-                  <span class="model-name">wan-fast</span>
-                  <span class="model-tag recommended">Recommended</span>
-                </button>
-                <button class="model-btn" data-value="wan">
-                  <span class="model-name">wan</span>
-                  <span class="model-tag quality">Quality</span>
-                </button>
-                <button class="model-btn" data-value="seedance">
-                  <span class="model-name">seedance</span>
-                  <span class="model-tag">Creative</span>
-                </button>
-                <button class="model-btn" data-value="ltx-2">
-                  <span class="model-name">ltx-2</span>
-                  <span class="model-tag">Fast</span>
-                </button>
-                <button class="model-btn" data-value="p-video">
-                  <span class="model-name">p-video</span>
-                  <span class="model-tag">Standard</span>
-                </button>
-                <button class="model-btn" data-value="veo">
-                  <span class="model-name">veo</span>
-                  <span class="model-tag premium">Premium</span>
-                </button>
-              </div>
-              <input type="hidden" id="model" value="wan-fast" />
-            </div>
-
-            <div class="field">
-              <label class="toggle-label">
-                <div class="toggle-info">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                  <div>
-                    <span>Background Audio</span>
-                    <small>Soundtrack add karo (model support kare to)</small>
-                  </div>
-                </div>
-                <div class="toggle-switch">
-                  <input type="checkbox" id="audio" />
-                  <span class="toggle-track"></span>
-                </div>
-              </label>
-            </div>
-
-            <button id="generateBtn" class="generate-btn">
-              <span class="btn-content">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                Generate Video
-              </span>
-              <span class="btn-loading" style="display:none">
-                <span class="spinner"></span>
-                Generating...
-              </span>
-            </button>
-
-          </section>
-
-          <!-- Right panel: output -->
-          <section class="output-panel">
-            <div class="output-header">
-              <span>Output</span>
-              <button id="downloadBtn" class="download-btn" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download MP4
-              </button>
-            </div>
-
-            <div class="output-area" id="outputArea">
-              <!-- Idle state -->
-              <div class="idle-state" id="idleState">
-                <div class="idle-icon">
-                  <svg viewBox="0 0 80 80" fill="none">
-                    <circle cx="40" cy="40" r="38" stroke="url(#idleLg)" stroke-width="1" stroke-dasharray="4 4"/>
-                    <circle cx="40" cy="40" r="28" stroke="url(#idleLg)" stroke-width="0.5" opacity="0.5"/>
-                    <polygon points="32,26 56,40 32,54" fill="url(#idleLg2)" opacity="0.8"/>
-                    <defs>
-                      <linearGradient id="idleLg" x1="2" y1="2" x2="78" y2="78"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#ec4899"/></linearGradient>
-                      <linearGradient id="idleLg2" x1="32" y1="26" x2="56" y2="54"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#ec4899"/></linearGradient>
-                    </defs>
-                  </svg>
-                </div>
-                <h3>Ready to Create</h3>
-                <p>Prompt likho aur Generate dabao<br/>Pehli request mein 1–3 minute lag sakte hain</p>
-              </div>
-
-              <!-- Loading state -->
-              <div class="loading-state" id="loadingState" style="display:none">
-                <div class="loading-visual">
-                  <div class="loading-ring ring1"></div>
-                  <div class="loading-ring ring2"></div>
-                  <div class="loading-ring ring3"></div>
-                  <div class="loading-icon">
-                    <svg viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="url(#loadLg)"/><defs><linearGradient id="loadLg" x1="5" y1="3" x2="19" y2="21"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs></svg>
-                  </div>
-                </div>
-                <h3 id="loadingTitle">Video Generate Ho Rahi Hai...</h3>
-                <p id="status">AI model kaam kar raha hai, thora wait karo</p>
-                <div class="progress-bar">
-                  <div class="progress-fill" id="progressFill"></div>
-                </div>
-              </div>
-
-              <!-- Video output -->
-              <video id="output" controls playsinline muted style="display:none"></video>
-            </div>
-
-            <!-- Status bar -->
-            <div class="status-bar" id="statusBar">
-              <span class="status-dot idle" id="statusDot"></span>
-              <span id="statusText">Tayyar hai — prompt likho aur generate karo</span>
-            </div>
-          </section>
+        <div class="actions">
+          <button id="generateBtn" type="button">Generate video</button>
+          <button id="downloadBtn" type="button" disabled>Download MP4</button>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section class="card">
+        <p id="status">Prompt likho aur Generate video dabao. Pehla request thora waqt leta hai.</p>
+        <video id="output" controls playsinline muted></video>
+      </section>
+
+      <section class="card card-free">
+        <h2 class="section-title">Free mode — bina paise / card</h2>
+        <p class="muted">
+          Neeche <strong>English keywords</strong> likho (2–6 words behtar), ya khali chhor do — uper wala
+          prompt se auto words ban jayenge. Phir sites kholo, pasand clip download karo, CapCut me jodo.
+        </p>
+
+        <label for="freeKeywords">English keywords (optional)</label>
+        <input
+          id="freeKeywords"
+          type="text"
+          placeholder="e.g. neon city night rain cinematic"
+        />
+
+        <div class="actions actions-free">
+          <button id="freeLinksBtn" type="button" class="btn-secondary">
+            Banado search links
+          </button>
+          <button id="copyKeywordsBtn" type="button" class="btn-secondary">
+            Copy keywords
+          </button>
+        </div>
+
+        <div id="freeResults" class="free-results is-hidden">
+          <p class="free-query-label">Search query:</p>
+          <p id="freeQueryOut" class="free-query-out"></p>
+          <ul id="freeLinkList" class="free-link-list"></ul>
+        </div>
+
+        <details class="capcut-details">
+          <summary>CapCut me video kaise banayein (steps)</summary>
+          <ol class="capcut-steps">
+            <li>Mobile / PC pe <strong>CapCut</strong> install karo (free).</li>
+            <li>Pexels ya Pixabay se <strong>MP4 download</strong> karo (free license wala clip).</li>
+            <li>CapCut → <strong>New project</strong> → clip import karo.</li>
+            <li>
+              <strong>Keyframe</strong> / Animation: thora zoom-in ya pan lagao (Ken Burns) taake clip “alive” lage.
+            </li>
+            <li>Text + logo lagao, background music (CapCut library free) optional.</li>
+            <li>Export → <strong>1080p</strong> → gallery me save.</li>
+          </ol>
+          <p class="muted small">
+            Ye workflow <strong>real AI text-to-video</strong> nahi hai, lekin professional look free me possible hai.
+          </p>
+        </details>
+      </section>
+    </main>
 
     <script src="./video-tool.js"></script>
   </body>
