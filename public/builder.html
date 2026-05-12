@@ -1,489 +1,358 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Website Builder Tool</title>
-    <link rel="stylesheet" href="./builder.css" />
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Website Builder — My AI Chat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: #060910; color: #e2e8f0; overflow: hidden; }
 
-      body {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        background: #0a0e1a;
-        color: #eef2ff;
-        min-height: 100vh;
-      }
+    /* SIDEBAR */
+    .sidebar {
+      position: fixed; top: 0; left: 0; width: 200px; height: 100vh;
+      background: rgba(8,11,22,0.97);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column; z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 16px 14px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .sidebar-logo img { height: 32px; }
+    .sidebar-logo span { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#fff; }
+    .sidebar-nav { padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .sidebar-nav a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      color: rgba(255,255,255,0.45); font-size: 13px;
+      text-decoration: none; transition: all 0.18s;
+    }
+    .sidebar-nav a:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .sidebar-nav a.active { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+    .sidebar-nav a .icon { font-size: 15px; width: 18px; }
+    .sidebar-bottom { padding: 10px 8px 14px; border-top: 1px solid rgba(255,255,255,0.06); }
+    .sidebar-bottom a {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 8px;
+      color: rgba(255,255,255,0.3); font-size: 13px; text-decoration: none;
+    }
+    .sidebar-bottom a:hover { color: rgba(255,255,255,0.7); }
 
-      /* ── SIDEBAR ── */
-      .sidebar {
-        position: fixed;
-        top: 0; left: 0;
-        width: 200px;
-        height: 100vh;
-        background: #0d1120;
-        border-right: 1px solid rgba(255,255,255,0.06);
-        display: flex;
-        flex-direction: column;
-        padding: 20px 0;
-        z-index: 100;
-      }
+    /* MAIN */
+    .main-wrap { margin-left: 200px; height: 100vh; display: flex; flex-direction: column; }
 
-      .sidebar-logo {
-        padding: 0 16px 20px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
+    /* TOPBAR */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 22px; background: rgba(6,9,16,0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(16px); flex-shrink: 0;
+    }
+    .topbar-info h1 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:#fff; }
+    .topbar-info p  { font-size:11px; color:rgba(255,255,255,0.35); margin-top:2px; }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-sm {
+      padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: none; transition: all 0.18s; font-family: 'DM Sans', sans-serif;
+    }
+    .btn-secondary { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .btn-primary   { background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-success   { background: linear-gradient(135deg,#059669,#10b981); color: #fff; }
+    .btn-success:hover { opacity: 0.88; }
 
-      .sidebar-logo img { height: 36px; }
-      .sidebar-logo span { font-size: 14px; font-weight: 600; color: #fff; }
+    /* WORKSPACE */
+    .workspace { display: flex; flex: 1; overflow: hidden; }
 
-      .sidebar-nav { padding: 16px 8px; display: flex; flex-direction: column; gap: 4px; }
+    /* LEFT PANEL */
+    .left-panel {
+      width: 360px; min-width: 360px;
+      background: #0a0e1c;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      overflow-y: auto; padding: 18px 16px 24px;
+      scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.3) transparent;
+    }
+    .left-panel::-webkit-scrollbar { width: 4px; }
+    .left-panel::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 4px; }
 
-      .sidebar-nav a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 9px 12px;
-        border-radius: 8px;
-        color: rgba(255,255,255,0.5);
-        text-decoration: none;
-        font-size: 13px;
-        transition: all 0.2s;
-      }
+    .form-section { margin-bottom: 22px; }
+    .form-section-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3);
+      text-transform: uppercase; letter-spacing: 1.6px;
+      margin-bottom: 12px; padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .form-section-title::before { content:''; width:3px; height:12px; background:#6366f1; border-radius:2px; flex-shrink:0; }
 
-      .sidebar-nav a:hover { background: rgba(255,255,255,0.06); color: #fff; }
-      .sidebar-nav a.active { background: rgba(99,102,241,0.15); color: #a5b4fc; }
-      .sidebar-nav a span.icon { font-size: 16px; }
+    .fgroup { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .fgroup label { font-size:12px; color:rgba(255,255,255,0.5); font-weight:500; }
+    .fgroup input, .fgroup textarea, .fgroup select {
+      padding: 9px 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 9px; color: #e2e8f0;
+      font-size: 13px; font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border 0.2s, background 0.2s;
+    }
+    .fgroup input:focus, .fgroup textarea:focus, .fgroup select:focus {
+      border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.06);
+    }
+    .fgroup input[type="color"] { padding: 4px 8px; height: 38px; cursor: pointer; }
+    .fgroup textarea { resize: vertical; }
+    .fgroup select option { background: #111827; }
 
-      .sidebar-bottom {
-        margin-top: auto;
-        padding: 12px 8px;
-        border-top: 1px solid rgba(255,255,255,0.06);
-      }
+    .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-      .sidebar-bottom a {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 9px 12px;
-        border-radius: 8px;
-        color: rgba(255,255,255,0.4);
-        text-decoration: none;
-        font-size: 13px;
-        transition: all 0.2s;
-      }
+    /* Logo preview */
+    .logo-preview-box {
+      background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 14px; text-align: center;
+      margin-bottom: 10px; min-height: 72px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+    }
+    #logoPreviewWrap svg { width: 48px; height: 48px; }
 
-      .sidebar-bottom a:hover { background: rgba(255,255,255,0.06); color: #fff; }
+    .img-preview { width:100%; border-radius:10px; margin-top:8px; display:none; border:1px solid rgba(255,255,255,0.08); max-height:130px; object-fit:cover; }
+    .url-input {
+      margin-top:6px; padding:8px 12px; background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.07); border-radius:8px;
+      color:rgba(255,255,255,0.3); font-size:11px; width:100%; outline:none;
+    }
 
-      /* ── MAIN ── */
-      .main-content {
-        margin-left: 200px;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-      }
+    .gen-img-btn {
+      width:100%; padding:9px; background:rgba(99,102,241,0.12);
+      border:1px solid rgba(99,102,241,0.25); border-radius:9px;
+      color:#a5b4fc; font-size:13px; font-weight:600; cursor:pointer;
+      transition:all 0.2s; font-family:'DM Sans',sans-serif;
+    }
+    .gen-img-btn:hover { background:rgba(99,102,241,0.22); color:#fff; }
 
-      /* ── TOPBAR ── */
-      .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 24px;
-        background: rgba(10,14,26,0.9);
-        backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        position: sticky;
-        top: 0;
-        z-index: 50;
-      }
+    .gen-site-btn {
+      width:100%; padding:13px; margin-top:4px;
+      background:linear-gradient(135deg,#6366f1,#8b5cf6);
+      border:none; border-radius:11px; color:#fff;
+      font-size:14px; font-weight:700; cursor:pointer;
+      box-shadow:0 6px 24px rgba(99,102,241,0.35);
+      transition:opacity 0.2s; font-family:'DM Sans',sans-serif;
+    }
+    .gen-site-btn:hover { opacity:0.88; }
 
-      .topbar-title { display: flex; flex-direction: column; }
-      .topbar-title h1 { font-size: 18px; font-weight: 600; color: #fff; }
-      .topbar-title p { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    /* PROGRESS */
+    #progressBar {
+      display:none; align-items:center; gap:10px;
+      padding:10px 14px; background:rgba(99,102,241,0.08);
+      border:1px solid rgba(99,102,241,0.2); border-radius:9px; margin-bottom:10px;
+    }
+    .prog-track { flex:1; background:rgba(255,255,255,0.08); border-radius:10px; height:6px; overflow:hidden; }
+    #progressFill { height:100%; background:linear-gradient(90deg,#6366f1,#8b5cf6); border-radius:10px; width:0%; transition:width 0.4s ease; }
+    .prog-lbl { font-size:11px; color:rgba(255,255,255,0.5); white-space:nowrap; }
 
-      .back-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 14px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 8px;
-        color: rgba(255,255,255,0.7);
-        text-decoration: none;
-        font-size: 13px;
-        transition: all 0.2s;
-      }
+    /* RIGHT PANEL */
+    .right-panel { flex:1; display:flex; flex-direction:column; background:#07090f; overflow:hidden; }
 
-      .back-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .preview-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 16px; background:rgba(10,14,26,0.9);
+      border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0;
+    }
+    .preview-tabs { display:flex; gap:4px; }
+    .preview-tab {
+      display:none; align-items:center; gap:5px;
+      padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600;
+      cursor:pointer; border:none; font-family:'DM Sans',sans-serif;
+      background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.45);
+      transition:all 0.18s;
+    }
+    .preview-tab.active { background:rgba(99,102,241,0.2); color:#a5b4fc; }
+    .preview-tab:hover  { background:rgba(255,255,255,0.08); color:#fff; }
 
-      /* ── GRID ── */
-      .grid {
-        display: grid;
-        grid-template-columns: 420px 1fr;
-        gap: 0;
-        flex: 1;
-        height: calc(100vh - 61px);
-      }
+    #preview { flex:1; border:none; width:100%; background:#f8fafc; }
+    #empty-preview {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:14px;
+      color:rgba(255,255,255,0.18);
+    }
+    #empty-preview .ep-icon { font-size:52px; opacity:0.4; }
+    #empty-preview p { font-size:14px; }
 
-      /* ── LEFT PANEL ── */
-      .left-panel {
-        background: #0d1120;
-        border-right: 1px solid rgba(255,255,255,0.06);
-        overflow-y: auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
+    .status-bar {
+      padding:7px 16px; background:rgba(8,12,22,0.9);
+      border-top:1px solid rgba(255,255,255,0.05);
+      font-size:11px; color:rgba(255,255,255,0.3);
+      display:flex; align-items:center; gap:6px; flex-shrink:0;
+    }
+    .status-dot { width:6px; height:6px; border-radius:50%; background:#22c55e; flex-shrink:0; }
+  </style>
+</head>
+<body>
 
-      .left-panel::-webkit-scrollbar { width: 4px; }
-      .left-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 32 32" width="32" height="32" fill="none">
+      <circle cx="16" cy="16" r="14" stroke="url(#sl)" stroke-width="1.5"/>
+      <path d="M11 16l3.5 3.5L21 11" stroke="url(#sl)" stroke-width="2" stroke-linecap="round"/>
+      <defs><linearGradient id="sl" x1="2" y1="2" x2="30" y2="30"><stop stop-color="#a78bfa"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
+    </svg>
+    <span>My AI Chat</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="./index.html"><span class="icon">💬</span> Chat</a>
+    <a href="./image-tool.html"><span class="icon">🖼️</span> Image Generator</a>
+    <a href="./video-tool.html"><span class="icon">🎬</span> Video Generator</a>
+    <a href="./builder.html" class="active"><span class="icon">🌐</span> Website Builder</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="./index.html">← Back to Chat</a>
+  </div>
+</aside>
 
-      .section-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 11px;
-        font-weight: 600;
-        color: rgba(255,255,255,0.35);
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        margin-bottom: 4px;
-      }
+<!-- MAIN -->
+<div class="main-wrap">
 
-      .section-title::before {
-        content: '';
-        width: 3px;
-        height: 12px;
-        background: #6366f1;
-        border-radius: 2px;
-      }
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-info">
+      <h1>🌐 Website Builder</h1>
+      <p>AI se professional multi-page website banao — HTML + CSS + JS</p>
+    </div>
+    <div class="topbar-actions">
+      <button id="copyCodeBtn" class="btn-sm btn-secondary">📋 Copy HTML</button>
+      <button id="downloadBtn" class="btn-sm btn-success">⬇️ Download ZIP</button>
+    </div>
+  </header>
 
-      .form-group { display: flex; flex-direction: column; gap: 6px; }
+  <div class="workspace">
 
-      .form-group label {
-        font-size: 12px;
-        color: rgba(255,255,255,0.5);
-        font-weight: 500;
-      }
+    <!-- LEFT FORM -->
+    <div class="left-panel">
+      <form id="builder-form">
 
-      .form-group input,
-      .form-group textarea {
-        padding: 10px 12px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 10px;
-        color: #eef2ff;
-        font-size: 13px;
-        font-family: 'Segoe UI', Arial, sans-serif;
-        outline: none;
-        transition: border 0.2s, background 0.2s;
-        resize: none;
-      }
-
-      .form-group input:focus,
-      .form-group textarea:focus {
-        border-color: rgba(99,102,241,0.5);
-        background: rgba(99,102,241,0.05);
-      }
-
-      .form-group input[type="color"] {
-        padding: 4px 8px;
-        height: 40px;
-        cursor: pointer;
-      }
-
-      .form-group input[readonly] {
-        color: rgba(255,255,255,0.3);
-        font-size: 12px;
-      }
-
-      .image-preview {
-        width: 100%;
-        border-radius: 10px;
-        display: none;
-        margin-top: 8px;
-        border: 1px solid rgba(255,255,255,0.08);
-      }
-
-      .generate-img-btn {
-        padding: 10px;
-        background: rgba(99,102,241,0.15);
-        border: 1px solid rgba(99,102,241,0.3);
-        border-radius: 10px;
-        color: #a5b4fc;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        width: 100%;
-      }
-
-      .generate-img-btn:hover {
-        background: rgba(99,102,241,0.25);
-        border-color: rgba(99,102,241,0.5);
-        color: #fff;
-      }
-
-      .generate-main-btn {
-        padding: 13px;
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        border: none;
-        border-radius: 12px;
-        color: #fff;
-        font-size: 14px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: opacity 0.2s;
-        width: 100%;
-        margin-top: 4px;
-        box-shadow: 0 4px 20px rgba(99,102,241,0.3);
-      }
-
-      .generate-main-btn:hover { opacity: 0.88; }
-
-      /* ── RIGHT PANEL ── */
-      .right-panel {
-        display: flex;
-        flex-direction: column;
-        background: #080b15;
-        overflow: hidden;
-      }
-
-      .preview-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 20px;
-        border-bottom: 1px solid rgba(255,255,255,0.06);
-        background: rgba(10,14,26,0.8);
-      }
-
-      .preview-header span {
-        font-size: 13px;
-        font-weight: 600;
-        color: rgba(255,255,255,0.6);
-      }
-
-      .preview-actions { display: flex; gap: 8px; }
-
-      .action-btn {
-        padding: 7px 14px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
-      }
-
-      .action-btn.secondary {
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.1);
-        color: rgba(255,255,255,0.7);
-      }
-
-      .action-btn.secondary:hover {
-        background: rgba(255,255,255,0.1);
-        color: #fff;
-      }
-
-      .action-btn.primary {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
-        color: #fff;
-      }
-
-      .action-btn.primary:hover { opacity: 0.85; }
-
-      #preview {
-        flex: 1;
-        border: none;
-        width: 100%;
-        background: #fff;
-      }
-
-      .empty-preview {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        color: rgba(255,255,255,0.2);
-      }
-
-      .empty-preview .icon { font-size: 48px; opacity: 0.4; }
-      .empty-preview p { font-size: 14px; }
-
-      /* ── STATUS BAR ── */
-      .status-bar {
-        padding: 8px 20px;
-        background: rgba(10,14,26,0.8);
-        border-top: 1px solid rgba(255,255,255,0.06);
-        font-size: 11px;
-        color: rgba(255,255,255,0.3);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .status-dot {
-        width: 6px; height: 6px;
-        border-radius: 50%;
-        background: #22c55e;
-      }
-    </style>
-  </head>
-  <body>
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="/logo.svg" alt="Logo" style="background:transparent;">
-        <span>My AI Chat</span>
-      </div>
-      <nav class="sidebar-nav">
-        <a href="./index.html"><span class="icon">💬</span> Chat</a>
-        <a href="./image-tool.html"><span class="icon">🖼️</span> Image Generator</a>
-        <a href="./video-tool.html"><span class="icon">🎬</span> Video Generator</a>
-        <a href="./builder.html" class="active"><span class="icon">🌐</span> Website Builder</a>
-      </nav>
-      <div class="sidebar-bottom">
-        <a href="./index.html">← Back to Chat</a>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
-    <div class="main-content">
-
-      <!-- TOPBAR -->
-      <header class="topbar">
-        <div class="topbar-title">
-          <h1>🌐 Website Builder</h1>
-          <p>AI se professional website banao seconds mein</p>
+        <!-- PROGRESS -->
+        <div id="progressBar">
+          <div class="prog-track"><div id="progressFill"></div></div>
+          <span class="prog-lbl" id="progLabel">Generating...</span>
         </div>
-        <a href="./index.html" class="back-btn">← Back to Chat</a>
-      </header>
 
-      <!-- GRID -->
-      <div class="grid">
-
-        <!-- LEFT: FORM -->
-        <div class="left-panel">
-          <form id="builder-form">
-
-            <div class="section-title">PROMPT</div>
-
-            <div class="form-group">
-              <label>Business Name</label>
-              <input id="businessName" required placeholder="e.g. Gamer Web Studio" />
-            </div>
-
-            <div class="form-group">
-              <label>Tagline</label>
-              <input id="tagline" placeholder="e.g. Fast websites for small businesses" />
-            </div>
-
-            <div class="form-group">
+        <!-- BUSINESS INFO -->
+        <div class="form-section">
+          <div class="form-section-title">Business Details</div>
+          <div class="fgroup">
+            <label>Business Name *</label>
+            <input id="businessName" placeholder="e.g. Gamer Web Studio" required/>
+          </div>
+          <div class="fgroup">
+            <label>Tagline / Slogan</label>
+            <input id="tagline" placeholder="e.g. Fast websites for small businesses"/>
+          </div>
+          <div class="frow">
+            <div class="fgroup">
               <label>Business Type</label>
-              <input id="businessType" placeholder="e.g. Digital agency, Restaurant, Salon" />
+              <input id="businessType" placeholder="e.g. Digital Agency"/>
             </div>
-
-            <div class="form-group">
+            <div class="fgroup">
               <label>Primary Color</label>
-              <input id="primaryColor" type="color" value="#6366f1" />
+              <input id="primaryColor" type="color" value="#6366f1"/>
             </div>
-
-            <div class="form-group">
-              <label>Logo Text</label>
-              <input id="logoText" placeholder="e.g. GWS" />
-            </div>
-
-            <div class="form-group">
-              <label>Prompt / Theme</label>
-              <textarea id="promptText" rows="3" placeholder="e.g. Modern, trust-based, bold CTA, clean sections"></textarea>
-            </div>
-
-            <div class="section-title" style="margin-top:8px;">IMAGE</div>
-
-            <div class="form-group">
-              <label>Image Prompt</label>
-              <textarea id="imagePrompt" rows="2" placeholder="e.g. modern web agency office, neon blue, professional team, cinematic lighting"></textarea>
-            </div>
-
-            <button id="generateImageBtn" type="button" class="generate-img-btn">🖼️ Generate Hero Image</button>
-            <input id="generatedImageUrl" type="text" readonly placeholder="Generated image URL will appear here" style="margin-top:8px; padding:8px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:8px; color:rgba(255,255,255,0.3); font-size:12px; width:100%; outline:none;" />
-            <img id="imagePreview" class="image-preview" alt="Generated preview" />
-
-            <div class="section-title" style="margin-top:8px;">BUSINESS INFO</div>
-
-            <div class="form-group">
-              <label>Services (comma separated)</label>
-              <input id="services" placeholder="e.g. Website Design, SEO, Branding" />
-            </div>
-
-            <div class="form-group">
+          </div>
+          <div class="fgroup">
+            <label>Services (comma separated)</label>
+            <input id="services" placeholder="Web Design, SEO, Branding, Marketing"/>
+          </div>
+          <div class="frow">
+            <div class="fgroup">
               <label>WhatsApp Number</label>
-              <input id="whatsapp" placeholder="e.g. 923001234567" />
+              <input id="whatsapp" placeholder="923001234567"/>
             </div>
-
-            <div class="form-group">
+            <div class="fgroup">
               <label>Contact Email</label>
-              <input id="email" placeholder="e.g. hello@business.com" />
+              <input id="email" placeholder="hello@business.com"/>
             </div>
-
-            <button type="submit" class="generate-main-btn">✨ Generate Website</button>
-
-          </form>
-        </div>
-
-        <!-- RIGHT: PREVIEW -->
-        <div class="right-panel">
-          <div class="preview-header">
-            <span>OUTPUT</span>
-            <div class="preview-actions">
-              <button id="copyCodeBtn" type="button" class="action-btn secondary">Copy HTML</button>
-              <button id="downloadBtn" type="button" class="action-btn primary">Download HTML</button>
-            </div>
-          </div>
-
-          <div class="empty-preview" id="empty-preview">
-            <div class="icon">🌐</div>
-            <p>Fill the form and generate your website</p>
-          </div>
-
-          <iframe id="preview" title="Generated Website Preview" style="display:none;"></iframe>
-
-          <div class="status-bar">
-            <div class="status-dot"></div>
-            Ready — fill details and click Generate Website
           </div>
         </div>
 
+        <!-- LOGO -->
+        <div class="form-section">
+          <div class="form-section-title">Logo</div>
+          <div class="logo-preview-box">
+            <div id="logoPreviewWrap"></div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.35);text-align:left;line-height:1.6">
+              Live logo preview<br/>Updates as you type
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fgroup">
+              <label>Logo Text (2 chars)</label>
+              <input id="logoText" placeholder="e.g. GS" maxlength="4"/>
+            </div>
+            <div class="fgroup">
+              <label>Logo Style</label>
+              <select id="logoStyle">
+                <option value="modern">Modern Square</option>
+                <option value="shield">Shield</option>
+                <option value="hexagon">Hexagon</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- HERO IMAGE -->
+        <div class="form-section">
+          <div class="form-section-title">Hero Image</div>
+          <div class="fgroup">
+            <label>Image Prompt</label>
+            <textarea id="imagePrompt" rows="2" placeholder="e.g. modern office, professional team, neon blue, cinematic lighting"></textarea>
+          </div>
+          <button type="button" id="generateImageBtn" class="gen-img-btn">🖼️ Generate Hero Image</button>
+          <input id="generatedImageUrl" class="url-input" readonly placeholder="Generated URL appears here"/>
+          <img id="imagePreview" class="img-preview" alt="Preview"/>
+        </div>
+
+        <!-- CONTENT / THEME -->
+        <div class="form-section">
+          <div class="form-section-title">Theme &amp; Content</div>
+          <div class="fgroup">
+            <label>Prompt / Theme Style</label>
+            <textarea id="promptText" rows="2" placeholder="e.g. Modern, trust-based, bold CTA, clean professional look"></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="gen-site-btn">✨ Generate Full Website</button>
+      </form>
+    </div>
+
+    <!-- RIGHT PREVIEW -->
+    <div class="right-panel">
+      <div class="preview-header">
+        <div class="preview-tabs">
+          <button class="preview-tab active" data-page="index.html">🏠 Home</button>
+          <button class="preview-tab" data-page="about.html">👥 About</button>
+          <button class="preview-tab" data-page="services.html">⚙️ Services</button>
+          <button class="preview-tab" data-page="contact.html">📬 Contact</button>
+        </div>
+      </div>
+
+      <div id="empty-preview">
+        <div class="ep-icon">🌐</div>
+        <p>Form fill karo aur Generate dabao</p>
+        <p style="font-size:12px;margin-top:4px;color:rgba(255,255,255,0.12)">4 pages • HTML + CSS + JS • ZIP download</p>
+      </div>
+      <iframe id="preview" title="Preview" style="display:none;flex:1;border:none;width:100%"></iframe>
+
+      <div class="status-bar">
+        <div class="status-dot"></div>
+        <span>Ready — fill details and click Generate Website</span>
       </div>
     </div>
 
-    <script src="./builder.js"></script>
-    <script>
-      // Show iframe when content is generated
-      const origBuilderJS = window.onload;
-      const previewFrame = document.getElementById('preview');
-      const emptyPreview = document.getElementById('empty-preview');
-      const statusBar = document.querySelector('.status-bar');
+  </div>
+</div>
 
-      // Watch iframe src changes
-      const observer = new MutationObserver(() => {
-        if (previewFrame.srcdoc || previewFrame.src) {
-          emptyPreview.style.display = 'none';
-          previewFrame.style.display = 'block';
-          statusBar.innerHTML = '<div class="status-dot"></div> Website generated successfully!';
-        }
-      });
-      observer.observe(previewFrame, { attributes: true, attributeFilter: ['srcdoc', 'src'] });
-    </script>
-  </body>
+<script src="./builder.js"></script>
+</body>
 </html>
