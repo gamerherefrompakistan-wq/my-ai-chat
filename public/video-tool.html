@@ -4,825 +4,830 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Video Generator — My AI Chat</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0b14;
-    --surface: #111220;
-    --surface2: #181928;
-    --border: rgba(255,255,255,0.07);
-    --border-hover: rgba(139,92,246,0.4);
-    --accent: #8b5cf6;
-    --accent2: #a78bfa;
-    --accent-glow: rgba(139,92,246,0.25);
-    --text: #e8eaf0;
-    --text-muted: #6b7280;
-    --text-dim: #9ca3af;
-    --green: #10b981;
-    --red: #ef4444;
-    --yellow: #f59e0b;
-  }
+:root {
+  --bg: #08080f;
+  --surface: #0d0d1a;
+  --surface2: #111120;
+  --surface3: #161625;
+  --border: rgba(255,255,255,0.06);
+  --border-accent: rgba(124,77,255,0.35);
+  --accent: #7c4dff;
+  --accent2: #a78bfa;
+  --accent3: #c4b5fd;
+  --cyan: #22d3ee;
+  --green: #34d399;
+  --red: #f87171;
+  --gold: #fbbf24;
+  --text: #eeeeff;
+  --text2: #9999bb;
+  --text3: #444466;
+  --glow: 0 0 24px rgba(124,77,255,0.3);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ── STARS ── */
+.stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+.star {
+  position:absolute; background:white; border-radius:50%;
+  animation: twinkle var(--dur) ease-in-out infinite;
+  opacity:0;
+}
+@keyframes twinkle { 0%,100%{opacity:0} 50%{opacity:var(--op)} }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    overflow: hidden;
-  }
+/* ── GRID BG ── */
+.grid-bg {
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    linear-gradient(rgba(124,77,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,77,255,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
 
-  /* ── Starfield ── */
-  .stars {
-    position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  }
-  .star {
-    position: absolute;
-    background: white;
-    border-radius: 50%;
-    animation: twinkle var(--dur) ease-in-out infinite;
-    opacity: 0;
-  }
-  @keyframes twinkle {
-    0%,100%{opacity:0} 50%{opacity:var(--op)}
-  }
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 210px; min-width: 210px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 18px 0;
+  position: relative; z-index: 10;
+  animation: slideInLeft 0.5s ease;
+}
+@keyframes slideInLeft { from{transform:translateX(-30px);opacity:0} to{transform:translateX(0);opacity:1} }
+.sidebar::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:180px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(124,77,255,0.12) 0%, transparent 70%);
+  pointer-events:none;
+}
 
-  /* ── Sidebar ── */
-  .sidebar {
-    width: 200px;
-    min-width: 200px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    padding: 20px 14px;
-    gap: 6px;
-    position: relative;
-    z-index: 10;
-    animation: slideInLeft 0.5s ease;
-  }
-  @keyframes slideInLeft { from{transform:translateX(-30px);opacity:0} to{transform:translateX(0);opacity:1} }
+.logo {
+  display:flex; align-items:center; gap:10px;
+  padding: 6px 16px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.logo-orb {
+  width:34px; height:34px;
+  background: linear-gradient(135deg, #7c4dff, #3d5afe);
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: 0 4px 16px rgba(124,77,255,0.4);
+}
+.logo-text { font-size:14px; font-weight:700; letter-spacing:-0.02em; }
+.logo-sub { font-size:9px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
 
-  .logo {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 8px 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
-  }
-  .logo-icon {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent), #ec4899);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-  }
-  .logo-text { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; }
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding: 11px 16px;
+  cursor:pointer; text-decoration:none;
+  border-left: 2px solid transparent;
+  transition: all 0.2s; color: var(--text2);
+}
+.nav-item:hover { background:rgba(255,255,255,0.03); border-left-color:rgba(124,77,255,0.3); color:var(--text); }
+.nav-item.active { background:rgba(124,77,255,0.1); border-left-color:var(--accent); color:var(--accent2); }
 
-  .nav-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-  }
-  .nav-item:hover { background: var(--surface2); color: var(--text); }
-  .nav-item.active {
-    background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(167,139,250,0.1));
-    color: var(--accent2);
-    border: 1px solid rgba(139,92,246,0.3);
-  }
-  .nav-icon { font-size: 15px; }
+.nav-icon-wrap {
+  width:30px; height:30px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.nav-label { font-size:12px; font-weight:500; }
+.nav-badge {
+  margin-left:auto; font-size:8px; font-family:'JetBrains Mono',monospace;
+  background:var(--accent); color:white; padding:2px 5px; border-radius:4px;
+}
 
-  .api-badge {
-    margin-top: auto;
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px;
-    background: rgba(16,185,129,0.08);
-    border: 1px solid rgba(16,185,129,0.2);
-    border-radius: 8px;
-    font-size: 11px;
-    color: var(--green);
-  }
-  .api-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+.api-status {
+  margin-top:auto; margin: auto 12px 0;
+  display:flex; align-items:center; gap:8px;
+  padding: 8px 12px;
+  background: rgba(52,211,153,0.07);
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 8px;
+  font-size:11px; color:var(--green);
+}
+.api-dot { width:7px; height:7px; background:var(--green); border-radius:50%; animation:pulse-dot 2s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
 
-  /* ── Main ── */
-  .main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-    z-index: 5;
-  }
+/* ── MAIN ── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative; z-index:5; }
 
-  /* ── Top bar ── */
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 18px 28px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(10,11,20,0.8);
-    backdrop-filter: blur(10px);
-    animation: fadeDown 0.5s ease 0.1s both;
-  }
-  @keyframes fadeDown { from{transform:translateY(-10px);opacity:0} to{transform:translateY(0);opacity:1} }
+/* ── TOPBAR ── */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 16px 26px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,8,15,0.85);
+  backdrop-filter: blur(12px);
+  animation: fadeDown 0.5s ease 0.1s both;
+}
+@keyframes fadeDown { from{transform:translateY(-12px);opacity:0} to{transform:translateY(0);opacity:1} }
+.topbar-title { font-size:20px; font-weight:800; letter-spacing:-0.03em; }
+.topbar-title span { color:var(--accent2); }
+.topbar-sub { font-size:11px; color:var(--text3); margin-top:2px; }
+.topbar-actions { display:flex; gap:7px; }
+.btn-sm {
+  display:flex; align-items:center; gap:6px;
+  padding: 7px 13px; border-radius:8px;
+  font-size:12px; font-weight:500;
+  cursor:pointer; border:1px solid var(--border);
+  background:rgba(255,255,255,0.03); color:var(--text2);
+  transition:all 0.2s; text-decoration:none;
+  font-family:'Outfit',sans-serif;
+}
+.btn-sm:hover { background:rgba(255,255,255,0.07); color:var(--text); border-color:var(--border-accent); }
 
-  .page-title h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-  }
-  .page-title h1 span { color: var(--accent2); }
-  .page-title p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+/* ── CONTENT ── */
+.content { flex:1; display:grid; grid-template-columns:400px 1fr; overflow:hidden; }
 
-  .back-btn {
-    display: flex; align-items: center; gap: 7px;
-    padding: 9px 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text-dim);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .back-btn:hover { border-color: var(--accent); color: var(--accent2); }
+/* ── LEFT PANEL ── */
+.left-panel {
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  overflow-y:auto; padding:20px 18px;
+  display:flex; flex-direction:column; gap:18px;
+  animation: fadeUp 0.5s ease 0.2s both;
+}
+@keyframes fadeUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.left-panel::-webkit-scrollbar { width:3px; }
+.left-panel::-webkit-scrollbar-thumb { background:var(--accent); border-radius:10px; }
 
-  /* ── Content ── */
-  .content {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 480px 1fr;
-    overflow: hidden;
-  }
+.section-label {
+  display:flex; align-items:center; gap:7px;
+  font-size:9px; font-weight:700; letter-spacing:0.12em;
+  text-transform:uppercase; color:var(--text3); margin-bottom:9px;
+}
+.section-dot {
+  width:4px; height:4px; background:var(--accent); border-radius:50%;
+  box-shadow:0 0 6px var(--accent);
+}
+.section-line { flex:1; height:1px; background:var(--border); }
 
-  /* ── Left Panel ── */
-  .left-panel {
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    padding: 24px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    animation: fadeUp 0.5s ease 0.2s both;
-  }
-  @keyframes fadeUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+/* PROMPT */
+.prompt-textarea {
+  width:100%; min-height:90px;
+  background:var(--surface2); border:1px solid var(--border-accent);
+  border-radius:12px; color:var(--text);
+  font-family:'Outfit',sans-serif; font-size:13px;
+  line-height:1.6; padding:13px 15px; resize:vertical;
+  transition:border-color 0.2s, box-shadow 0.2s; outline:none;
+}
+.prompt-textarea::placeholder { color:var(--text3); font-style:italic; }
+.prompt-textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,77,255,0.12); }
+.prompt-foot {
+  display:flex; justify-content:space-between; align-items:center; margin-top:7px;
+}
+.char-count { font-size:10px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
+.enhance-btn {
+  font-size:10px; color:var(--accent2); cursor:pointer;
+  display:flex; align-items:center; gap:3px; transition:color 0.2s;
+  background:none; border:none; font-family:'Outfit',sans-serif;
+}
+.enhance-btn:hover { color:var(--accent3); }
 
-  .left-panel::-webkit-scrollbar { width: 4px; }
-  .left-panel::-webkit-scrollbar-track { background: transparent; }
-  .left-panel::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
+/* STYLE GRID */
+.style-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.style-card {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:10px; cursor:pointer;
+  display:flex; align-items:center; gap:9px;
+  transition:all 0.22s; position:relative; overflow:hidden;
+}
+.style-card:hover { border-color:var(--border-accent); transform:translateY(-1px); }
+.style-card.active {
+  border-color:var(--accent); background:rgba(124,77,255,0.1);
+  box-shadow: var(--glow);
+}
+.style-ico {
+  width:34px; height:34px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.style-name { font-size:11px; font-weight:600; }
+.style-desc { font-size:9px; color:var(--text3); margin-top:1px; }
 
-  .section-label {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-  }
-  .section-label::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
+/* DURATION */
+.dur-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+.dur-val { font-size:24px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--accent2); }
+.dur-unit { font-size:11px; color:var(--text3); margin-left:2px; }
+.custom-slider {
+  width:100%; -webkit-appearance:none; height:3px; border-radius:2px; outline:none; cursor:pointer;
+  background: linear-gradient(90deg, var(--accent) 37.5%, var(--surface3) 37.5%);
+}
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+  background:white; border:3px solid var(--accent); cursor:pointer;
+  box-shadow:0 0 10px rgba(124,77,255,0.6); transition:transform 0.1s;
+}
+.custom-slider::-webkit-slider-thumb:hover { transform:scale(1.25); }
+.slider-ticks { display:flex; justify-content:space-between; margin-top:5px; }
+.slider-tick { font-size:9px; color:var(--text3); font-family:'JetBrains Mono',monospace; }
 
-  /* Prompt */
-  .prompt-box {
-    position: relative;
-  }
-  .prompt-textarea {
-    width: 100%;
-    min-height: 120px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13.5px;
-    line-height: 1.6;
-    padding: 14px 16px;
-    resize: vertical;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    outline: none;
-  }
-  .prompt-textarea::placeholder { color: var(--text-muted); font-style: italic; }
-  .prompt-textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-  }
-  .char-count {
-    text-align: right;
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 6px;
-  }
+/* ASPECT */
+.ratio-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+.ratio-btn {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:9px; padding:9px 5px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  transition:all 0.2s;
+}
+.ratio-btn:hover { border-color:var(--border-accent); }
+.ratio-btn.active { border-color:var(--accent); background:rgba(124,77,255,0.1); }
+.ratio-label { font-size:10px; font-weight:600; font-family:'JetBrains Mono',monospace; color:var(--text2); }
+.ratio-btn.active .ratio-label { color:var(--accent2); }
+.ratio-vis { background:rgba(124,77,255,0.15); border:1px solid rgba(124,77,255,0.3); border-radius:2px; }
 
-  /* Style presets */
-  .style-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .style-btn {
-    padding: 10px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text-dim);
-    font-size: 12.5px;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .style-btn:hover { border-color: var(--border-hover); color: var(--text); }
-  .style-btn.active {
-    background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(167,139,250,0.08));
-    border-color: var(--accent);
-    color: var(--accent2);
-    box-shadow: 0 0 12px rgba(139,92,246,0.15);
-  }
-  .style-emoji { font-size: 15px; }
+/* MODEL */
+.model-select {
+  width:100%; background:var(--surface2);
+  border:1px solid var(--border-accent); border-radius:10px;
+  color:var(--text); font-family:'Outfit',sans-serif; font-size:13px;
+  padding:10px 14px; outline:none; cursor:pointer;
+  transition:border-color 0.2s; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b99' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center;
+}
+.model-select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,77,255,0.1); }
+.model-select option { background:var(--surface2); }
 
-  /* Duration slider */
-  .duration-wrap {
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .duration-display {
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .duration-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--accent2);
-  }
-  .duration-unit { font-size: 12px; color: var(--text-muted); }
-  .slider {
-    -webkit-appearance: none;
-    width: 100%; height: 4px;
-    background: linear-gradient(to right, var(--accent) 0%, var(--accent) 30%, var(--surface2) 30%);
-    border-radius: 4px;
-    outline: none;
-    transition: background 0.1s;
-  }
-  .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px; height: 18px;
-    background: white;
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 0 0 3px var(--accent), 0 2px 8px rgba(0,0,0,0.4);
-    transition: transform 0.15s;
-  }
-  .slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
-  .duration-ticks {
-    display: flex; justify-content: space-between;
-    font-size: 10px; color: var(--text-muted);
-  }
+/* AUDIO */
+.audio-row {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:10px 13px; cursor:pointer;
+  transition:border-color 0.2s;
+}
+.audio-row:hover { border-color:var(--border-accent); }
+.audio-left { display:flex; align-items:center; gap:10px; }
+.audio-icon {
+  width:28px; height:28px; border-radius:7px;
+  background:linear-gradient(135deg,#0d1f3a,#0d2a50);
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid rgba(34,211,238,0.25);
+}
+.audio-name { font-size:12px; font-weight:500; }
+.audio-sub { font-size:10px; color:var(--text3); }
+.toggle {
+  width:36px; height:20px; border-radius:10px; cursor:pointer;
+  position:relative; transition:background 0.25s; border:none; outline:none;
+  flex-shrink:0; background:var(--surface3);
+}
+.toggle::after {
+  content:''; position:absolute; top:3px; left:3px;
+  width:14px; height:14px; background:white; border-radius:50%;
+  transition:transform 0.25s; box-shadow:0 1px 4px rgba(0,0,0,0.4);
+}
+.toggle.on { background:var(--accent); }
+.toggle.on::after { transform:translateX(16px); }
 
-  /* Aspect ratio */
-  .aspect-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .aspect-btn {
-    padding: 10px 6px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text-dim);
-    font-size: 11.5px;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-  }
-  .aspect-btn:hover { border-color: var(--border-hover); }
-  .aspect-btn.active {
-    background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(167,139,250,0.08));
-    border-color: var(--accent);
-    color: var(--accent2);
-  }
-  .aspect-visual {
-    background: var(--border);
-    border-radius: 3px;
-  }
+/* NOTICE */
+.notice {
+  padding:10px 12px; border-radius:10px; font-size:11px; line-height:1.6; border:1px solid;
+}
+.notice.info { background:rgba(124,77,255,0.07); border-color:rgba(124,77,255,0.2); color:#a78bfa; }
+.notice.warn { background:rgba(251,191,36,0.07); border-color:rgba(251,191,36,0.2); color:#fbbf24; }
 
-  /* Model selector */
-  .model-select {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    padding: 11px 14px;
-    outline: none;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-  }
-  .model-select:focus { border-color: var(--accent); }
+/* GENERATE */
+.generate-btn {
+  width:100%; padding:14px; border-radius:12px;
+  background:linear-gradient(135deg, var(--accent), #3d5afe);
+  border:none; color:white;
+  font-family:'Outfit',sans-serif; font-size:14px; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px;
+  transition:all 0.25s; letter-spacing:0.01em; position:relative; overflow:hidden;
+}
+.generate-btn::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+  opacity:0; transition:opacity 0.2s;
+}
+.generate-btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(124,77,255,0.45); }
+.generate-btn:hover::before { opacity:1; }
+.generate-btn:active { transform:translateY(0); }
+.generate-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-shimmer {
+  position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform:translateX(-100%); animation:shimmer 2s infinite;
+}
+@keyframes shimmer { to { transform:translateX(100%); } }
 
-  /* Toggle */
-  .toggle-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: border-color 0.2s;
-  }
-  .toggle-row:hover { border-color: var(--border-hover); }
-  .toggle-info { display: flex; align-items: center; gap: 10px; }
-  .toggle-icon { font-size: 17px; }
-  .toggle-label { font-size: 13px; }
-  .toggle-desc { font-size: 11px; color: var(--text-muted); }
-  .toggle-switch {
-    width: 40px; height: 22px;
-    background: var(--surface);
-    border-radius: 11px;
-    position: relative;
-    transition: background 0.3s;
-    border: 1px solid var(--border);
-  }
-  .toggle-switch.on { background: var(--accent); border-color: var(--accent); }
-  .toggle-switch::after {
-    content: '';
-    position: absolute;
-    width: 16px; height: 16px;
-    background: white;
-    border-radius: 50%;
-    top: 2px; left: 2px;
-    transition: transform 0.3s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-  }
-  .toggle-switch.on::after { transform: translateX(18px); }
+/* DOWNLOAD */
+.download-btn {
+  width:100%; padding:10px; border-radius:10px;
+  background:rgba(255,255,255,0.03); border:1px solid var(--border);
+  color:var(--text2); font-family:'Outfit',sans-serif; font-size:12px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+  transition:all 0.2s;
+}
+.download-btn:hover { border-color:var(--green); color:var(--green); }
+.download-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
-  /* Generate button */
-  .generate-btn {
-    width: 100%;
-    padding: 15px;
-    background: linear-gradient(135deg, var(--accent), #7c3aed);
-    border: none;
-    border-radius: 14px;
-    color: white;
-    font-family: 'Syne', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    position: relative;
-    overflow: hidden;
-    letter-spacing: 0.3px;
-  }
-  .generate-btn::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .generate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139,92,246,0.4); }
-  .generate-btn:hover::before { opacity: 1; }
-  .generate-btn:active { transform: translateY(0); }
-  .generate-btn:disabled {
-    opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none;
-  }
+/* ── RIGHT PANEL ── */
+.right-panel {
+  display:flex; flex-direction:column; overflow:hidden;
+  animation: fadeUp 0.5s ease 0.3s both;
+}
+.output-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 22px; border-bottom:1px solid var(--border);
+  font-size:9px; font-weight:700; letter-spacing:0.12em;
+  text-transform:uppercase; color:var(--text3);
+}
+.output-actions { display:flex; gap:7px; }
+.action-btn {
+  display:flex; align-items:center; gap:5px;
+  padding:6px 12px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:7px;
+  color:var(--text2); font-size:11px; font-family:'Outfit',sans-serif;
+  cursor:pointer; transition:all 0.2s;
+}
+.action-btn:hover { border-color:var(--border-accent); color:var(--accent2); }
+.action-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
-  .btn-shimmer {
-    position: absolute; inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-    transform: translateX(-100%);
-    animation: shimmer 2s infinite;
-  }
-  @keyframes shimmer { to { transform: translateX(100%); } }
+.output-area {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+}
+.output-bg {
+  position:absolute; inset:0; pointer-events:none;
+  background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(124,77,255,0.06) 0%, transparent 70%);
+}
 
-  /* ── Right Panel ── */
-  .right-panel {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    animation: fadeUp 0.5s ease 0.3s both;
-  }
+/* EMPTY STATE */
+.empty-state {
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+  text-align:center; position:relative; z-index:1;
+  animation: floatBob 3.5s ease-in-out infinite;
+}
+@keyframes floatBob { 0%,100%{transform:translateY(0) rotate(-1deg)} 50%{transform:translateY(-12px) rotate(1deg)} }
 
-  .output-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-  .output-actions {
-    display: flex; gap: 8px;
-  }
-  .action-btn {
-    display: flex; align-items: center; gap: 6px;
-    padding: 7px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-dim);
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .action-btn:hover { border-color: var(--accent); color: var(--accent2); }
-  .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.clapper-3d { filter: drop-shadow(0 8px 24px rgba(124,77,255,0.4)); }
 
-  .output-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-  }
+.empty-title { font-size:22px; font-weight:800; letter-spacing:-0.03em; }
+.empty-sub { font-size:12px; color:var(--text3); max-width:260px; line-height:1.7; }
 
-  /* Empty state */
-  .empty-state {
-    display: flex; flex-direction: column; align-items: center; gap: 16px;
-    text-align: center;
-    animation: floatBob 3s ease-in-out infinite;
-  }
-  @keyframes floatBob {
-    0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)}
-  }
-  .empty-icon {
-    width: 90px; height: 90px;
-    background: var(--surface2);
-    border: 2px dashed rgba(139,92,246,0.3);
-    border-radius: 20px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 38px;
-    position: relative;
-  }
-  .empty-icon::after {
-    content: '';
-    position: absolute; inset: -8px;
-    border: 1px dashed rgba(139,92,246,0.15);
-    border-radius: 26px;
-    animation: spin 10s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .empty-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .empty-sub { font-size: 13px; color: var(--text-muted); max-width: 280px; line-height: 1.6; }
+/* GENERATING */
+.generating-state {
+  display:none; flex-direction:column; align-items:center; gap:18px;
+  width:100%; max-width:340px; position:relative; z-index:1;
+}
+.gen-orb {
+  width:72px; height:72px; border-radius:50%;
+  background:linear-gradient(135deg, var(--accent), #3d5afe);
+  display:flex; align-items:center; justify-content:center; font-size:28px;
+  animation: throb 2s ease-in-out infinite;
+  box-shadow:0 0 40px rgba(124,77,255,0.5);
+}
+@keyframes throb {
+  0%,100%{box-shadow:0 0 30px rgba(124,77,255,0.4)}
+  50%{box-shadow:0 0 60px rgba(124,77,255,0.8)}
+}
+.gen-title { font-size:16px; font-weight:700; }
+.gen-progress-bar { width:100%; height:3px; background:var(--surface3); border-radius:2px; overflow:hidden; }
+.gen-progress-fill {
+  height:100%; background:linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius:2px; width:0%; transition:width 0.4s ease;
+}
+.gen-status { font-size:11px; color:var(--text3); text-align:center; font-family:'JetBrains Mono',monospace; }
+.gen-dots { display:flex; gap:6px; }
+.gen-dot { width:6px; height:6px; border-radius:50%; background:var(--surface3); transition:background 0.3s; }
+.gen-dot.done { background:var(--accent); }
+.gen-dot.cur { background:var(--cyan); animation:blink-d 0.8s ease-in-out infinite; }
+@keyframes blink-d { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-  /* Generating state */
-  .generating-state {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
-    max-width: 360px;
-  }
-  .gen-ring {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    border: 3px solid var(--surface2);
-    border-top-color: var(--accent);
-    animation: spin 1s linear infinite;
-  }
-  .gen-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-  }
-  .gen-progress-bar {
-    width: 100%;
-    height: 4px;
-    background: var(--surface2);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .gen-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 4px;
-    width: 0%;
-    transition: width 0.3s ease;
-  }
-  .gen-status { font-size: 12px; color: var(--text-muted); text-align: center; }
+/* VIDEO RESULT */
+.video-result {
+  display:none; flex-direction:column;
+  width:100%; height:100%; align-items:center; justify-content:center;
+  padding:24px; gap:14px; position:relative; z-index:1;
+}
+.video-wrap {
+  width:100%; max-width:620px;
+  border-radius:14px; overflow:hidden;
+  border:1px solid var(--border-accent);
+  box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  background:#000; aspect-ratio:16/9;
+}
+.video-wrap video { width:100%; height:100%; object-fit:contain; }
+.video-actions { display:flex; gap:8px; width:100%; max-width:620px; }
+.v-btn {
+  flex:1; padding:9px; border-radius:9px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text2); font-family:'Outfit',sans-serif; font-size:12px; font-weight:500;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px;
+  transition:all 0.2s;
+}
+.v-btn:hover { background:rgba(255,255,255,0.07); color:var(--text); }
+.v-btn.pri { background:rgba(124,77,255,0.15); border-color:var(--border-accent); color:var(--accent2); }
+.v-btn.pri:hover { background:rgba(124,77,255,0.25); }
+.v-btn:disabled { opacity:0.3; cursor:not-allowed; }
 
-  /* Video result */
-  .video-result {
-    display: none;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    gap: 16px;
-  }
-  .video-wrap {
-    width: 100%;
-    max-width: 600px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    background: #000;
-    aspect-ratio: 16/9;
-    position: relative;
-  }
-  .video-wrap video {
-    width: 100%; height: 100%; object-fit: contain;
-  }
-
-  /* Status bar */
-  .status-bar {
-    padding: 10px 24px;
-    border-top: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12px;
-    color: var(--text-muted);
-    background: rgba(10,11,20,0.6);
-  }
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-
-  /* Free mode */
-  .free-section {
-    margin: 0 0 4px;
-  }
-  .free-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
-    border: 1px solid rgba(16,185,129,0.3);
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 11px;
-    color: var(--green);
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    margin-bottom: 10px;
-  }
-  .free-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
-
-  /* Download button */
-  .download-btn {
-    display: flex; align-items: center; gap: 8px;
-    padding: 11px 20px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text-dim);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .download-btn:hover { border-color: var(--green); color: var(--green); }
-  .download-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-  /* Notice box */
-  .notice {
-    padding: 12px 14px;
-    border-radius: 12px;
-    font-size: 12px;
-    line-height: 1.6;
-    border: 1px solid;
-  }
-  .notice.info { background: rgba(139,92,246,0.07); border-color: rgba(139,92,246,0.2); color: #a78bfa; }
-  .notice.warn { background: rgba(245,158,11,0.07); border-color: rgba(245,158,11,0.2); color: #fcd34d; }
-
-  /* Background mesh */
-  .mesh {
-    position: fixed; inset: 0; pointer-events: none; z-index: 1;
-    background:
-      radial-gradient(ellipse 600px 400px at 20% 50%, rgba(139,92,246,0.04) 0%, transparent 70%),
-      radial-gradient(ellipse 400px 400px at 80% 20%, rgba(236,72,153,0.03) 0%, transparent 60%);
-  }
+/* STATUS BAR */
+.status-bar {
+  padding:9px 22px; border-top:1px solid var(--border);
+  display:flex; align-items:center; gap:8px;
+  font-size:11px; color:var(--text3);
+  background:rgba(8,8,15,0.7); font-family:'JetBrains Mono',monospace;
+}
+.status-dot { width:6px; height:6px; border-radius:50%; background:var(--green); flex-shrink:0; }
 </style>
 </head>
 <body>
 
 <div class="stars" id="stars"></div>
-<div class="mesh"></div>
+<div class="grid-bg"></div>
 
-<!-- Sidebar -->
+<!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="logo">
-    <div class="logo-icon">🤖</div>
-    <span class="logo-text">My AI Chat</span>
+    <div class="logo-orb">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L22 7V17L12 22L2 17V7Z" fill="rgba(255,255,255,0.9)" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+        <path d="M12 6L18 9V15L12 18L6 15V9Z" fill="rgba(255,255,255,0.2)"/>
+        <circle cx="12" cy="12" r="2.5" fill="white" fill-opacity="0.8"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">My AI Chat</div>
+      <div class="logo-sub">v2.0 PRO</div>
+    </div>
   </div>
 
   <a href="index.html" class="nav-item">
-    <span class="nav-icon">💬</span> Chat
-  </a>
-  <a href="image-tool.html" class="nav-item">
-    <span class="nav-icon">🖼️</span> Image Generator
-  </a>
-  <a href="video-tool.html" class="nav-item active">
-    <span class="nav-icon">🎬</span> Video Generator
+    <div class="nav-icon-wrap" style="background:#1a1a30;border:1px solid rgba(99,102,241,0.3)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="3" width="20" height="14" rx="3" fill="rgba(99,102,241,0.15)" stroke="#818cf8" stroke-width="1.5"/>
+        <circle cx="8" cy="10" r="1.2" fill="#818cf8"/>
+        <circle cx="12" cy="10" r="1.2" fill="#818cf8"/>
+        <circle cx="16" cy="10" r="1.2" fill="#818cf8"/>
+        <path d="M6 17L6 21L10 17" fill="#818cf8" fill-opacity="0.7"/>
+      </svg>
+    </div>
+    <span class="nav-label">Chat</span>
   </a>
 
-  <div class="api-badge" style="margin-top: auto;">
+  <a href="image-tool.html" class="nav-item">
+    <div class="nav-icon-wrap" style="background:#0d2218;border:1px solid rgba(52,211,153,0.3)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="2" width="20" height="20" rx="4" fill="rgba(52,211,153,0.1)" stroke="#34d399" stroke-width="1.5"/>
+        <circle cx="8" cy="8" r="2" fill="#34d399" fill-opacity="0.8"/>
+        <path d="M2 16L8 10L13 15L17 11L22 16" stroke="#34d399" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="nav-label">Image Generator</span>
+  </a>
+
+  <a href="video-tool.html" class="nav-item active">
+    <div class="nav-icon-wrap" style="background:#1a0a30;border:1px solid rgba(167,139,250,0.3)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <rect x="1" y="4" width="16" height="16" rx="3" fill="rgba(167,139,250,0.12)" stroke="#a78bfa" stroke-width="1.5"/>
+        <path d="M17 9L23 6L23 18L17 15Z" fill="#a78bfa" fill-opacity="0.8"/>
+        <path d="M6 9L11 12L6 15Z" fill="#c4b5fd"/>
+        <line x1="3" y1="2" x2="5" y2="4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="8" y1="2" x2="8" y2="4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="13" y1="2" x2="11" y2="4" stroke="#c4b5fd" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="nav-label">Video Generator</span>
+    <span class="nav-badge">NEW</span>
+  </a>
+
+  <div class="api-status">
     <div class="api-dot"></div>
     Pollinations AI
   </div>
 </aside>
 
-<!-- Main -->
+<!-- MAIN -->
 <main class="main">
-  <!-- Topbar -->
   <div class="topbar">
-    <div class="page-title">
-      <h1>Video <span>Generator</span></h1>
-      <p>Text se stunning videos banao AI se</p>
+    <div>
+      <div class="topbar-title">Video <span>Generator</span></div>
+      <div class="topbar-sub">Text se stunning videos banao AI se</div>
     </div>
-    <a href="index.html" class="back-btn">
-      ← Back to Chat
-    </a>
+    <div class="topbar-actions">
+      <button class="btn-sm" id="regenBtnTop" disabled onclick="generateVideo()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+        Regenerate
+      </button>
+      <button class="btn-sm" id="copyUrlBtnTop" disabled>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Copy URL
+      </button>
+      <a href="index.html" class="btn-sm">← Back to Chat</a>
+    </div>
   </div>
 
-  <!-- Content -->
   <div class="content">
-
-    <!-- Left Panel -->
+    <!-- LEFT PANEL -->
     <div class="left-panel">
 
-      <!-- Prompt -->
-      <div class="prompt-box">
-        <div class="section-label">✏️ Prompt</div>
-        <textarea
-          class="prompt-textarea"
-          id="promptInput"
+      <!-- PROMPT -->
+      <div>
+        <div class="section-label">
+          <span class="section-dot"></span>
+          <span>Prompt</span>
+          <span class="section-line"></span>
+        </div>
+        <textarea class="prompt-textarea" id="promptInput"
           placeholder="e.g. slow drone shot over futuristic city at sunset, cinematic, 4k look..."
-          oninput="updateChar(this)"
-        ></textarea>
-        <div class="char-count"><span id="charCount">0</span> characters</div>
+          oninput="updateChar(this)"></textarea>
+        <div class="prompt-foot">
+          <span class="char-count"><span id="charCount">0</span> characters</span>
+          <button class="enhance-btn" onclick="enhancePrompt()">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275z"/></svg>
+            ✨ Enhance
+          </button>
+        </div>
       </div>
 
-      <!-- Style -->
+      <!-- STYLE -->
       <div>
-        <div class="section-label">✨ Style</div>
+        <div class="section-label">
+          <span class="section-dot"></span>
+          <span>Style</span>
+          <span class="section-line"></span>
+        </div>
         <div class="style-grid">
-          <button class="style-btn active" onclick="selectStyle(this, '')">
-            <span class="style-emoji">🎯</span> No Style
-          </button>
-          <button class="style-btn" onclick="selectStyle(this, 'cinematic, film grain, dramatic lighting')">
-            <span class="style-emoji">🎬</span> Cinematic
-          </button>
-          <button class="style-btn" onclick="selectStyle(this, 'anime style, vibrant colors, 2D animation')">
-            <span class="style-emoji">🌸</span> Anime
-          </button>
-          <button class="style-btn" onclick="selectStyle(this, 'photorealistic, 8k, ultra detailed')">
-            <span class="style-emoji">📷</span> Realistic
-          </button>
-          <button class="style-btn" onclick="selectStyle(this, '3D render, CGI, volumetric lighting')">
-            <span class="style-emoji">💠</span> 3D Render
-          </button>
-          <button class="style-btn" onclick="selectStyle(this, 'oil painting style, artistic, textured')">
-            <span class="style-emoji">🎨</span> Artistic
-          </button>
-        </div>
-      </div>
-
-      <!-- Duration -->
-      <div>
-        <div class="section-label">⏱️ Duration</div>
-        <div class="duration-wrap">
-          <div class="duration-display">
-            <div>
-              <span class="duration-value" id="durVal">5</span>
-              <span class="duration-unit"> seconds</span>
+          <div class="style-card active" onclick="selectStyle(this,'')">
+            <div class="style-ico" style="background:linear-gradient(135deg,#1a1a2e,#2a1a4e)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" fill="rgba(124,77,255,0.1)" stroke="rgba(124,77,255,0.5)" stroke-width="1.5"/>
+                <path d="M12 3C8 7 8 17 12 21C16 17 16 7 12 3Z" fill="rgba(124,77,255,0.35)"/>
+                <circle cx="12" cy="12" r="3" fill="#7c4dff" fill-opacity="0.9"/>
+                <circle cx="12" cy="12" r="1" fill="white" fill-opacity="0.7"/>
+              </svg>
             </div>
-            <span style="font-size:11px;color:var(--text-muted)">2s – 10s</span>
+            <div><div class="style-name">No Style</div><div class="style-desc">Pure AI output</div></div>
           </div>
-          <input type="range" class="slider" id="durationSlider" min="2" max="10" value="5" oninput="updateDuration(this)">
-          <div class="duration-ticks">
-            <span>2s</span><span>4s</span><span>6s</span><span>8s</span><span>10s</span>
+          <div class="style-card" onclick="selectStyle(this,'cinematic, film grain, dramatic lighting')">
+            <div class="style-ico" style="background:linear-gradient(135deg,#0d1a2e,#0d2a3a)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="6" width="20" height="13" rx="2.5" fill="rgba(34,211,238,0.08)" stroke="#22d3ee" stroke-width="1.2"/>
+                <path d="M2 6L12 2L22 6" stroke="#22d3ee" stroke-width="1.5" stroke-linejoin="round"/>
+                <rect x="5" y="9" width="3.5" height="5" rx="1" fill="#22d3ee" fill-opacity="0.5"/>
+                <rect x="10.25" y="9" width="3.5" height="5" rx="1" fill="#22d3ee" fill-opacity="0.5"/>
+                <rect x="15.5" y="9" width="3.5" height="5" rx="1" fill="#22d3ee" fill-opacity="0.5"/>
+              </svg>
+            </div>
+            <div><div class="style-name">Cinematic</div><div class="style-desc">Film grade look</div></div>
+          </div>
+          <div class="style-card" onclick="selectStyle(this,'anime style, vibrant colors, 2D animation')">
+            <div class="style-ico" style="background:linear-gradient(135deg,#2a0d2e,#3a0d2e)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <ellipse cx="12" cy="13" rx="8" ry="8" fill="rgba(244,114,182,0.08)" stroke="#f472b6" stroke-width="1.2"/>
+                <path d="M7 5C6 1 10 0 12 3C14 0 18 1 17 5C15 4 13 4 12 5C11 4 9 4 7 5Z" fill="#f472b6" fill-opacity="0.7"/>
+                <ellipse cx="9" cy="12" rx="2" ry="2.2" fill="#f472b6" fill-opacity="0.8"/>
+                <ellipse cx="15" cy="12" rx="2" ry="2.2" fill="#f472b6" fill-opacity="0.8"/>
+                <circle cx="9.5" cy="11.5" r="0.8" fill="white"/>
+                <circle cx="15.5" cy="11.5" r="0.8" fill="white"/>
+                <path d="M9 16Q12 18 15 16" stroke="#f472b6" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div><div class="style-name">Anime</div><div class="style-desc">Japanese style</div></div>
+          </div>
+          <div class="style-card" onclick="selectStyle(this,'photorealistic, 8k, ultra detailed')">
+            <div class="style-ico" style="background:linear-gradient(135deg,#0d2a1a,#0a1f14)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" fill="rgba(52,211,153,0.06)" stroke="#34d399" stroke-width="1.2"/>
+                <path d="M3 12Q7 4 12 4Q17 4 21 12Q17 20 12 20Q7 20 3 12Z" fill="rgba(52,211,153,0.15)"/>
+                <ellipse cx="9" cy="10.5" rx="2" ry="2.5" fill="#34d399" fill-opacity="0.75"/>
+                <ellipse cx="15" cy="10.5" rx="2" ry="2.5" fill="#34d399" fill-opacity="0.75"/>
+                <circle cx="9.6" cy="10" r="0.9" fill="white"/>
+                <circle cx="15.6" cy="10" r="0.9" fill="white"/>
+                <path d="M9.5 15Q12 16.5 14.5 15" stroke="#34d399" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div><div class="style-name">Realistic</div><div class="style-desc">Photorealistic</div></div>
+          </div>
+          <div class="style-card" onclick="selectStyle(this,'3D render, CGI, volumetric lighting')">
+            <div class="style-ico" style="background:linear-gradient(135deg,#0d1f2e,#0d2a3a)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L22 7V17L12 22L2 17V7Z" fill="rgba(56,189,248,0.08)" stroke="#38bdf8" stroke-width="1.2" stroke-linejoin="round"/>
+                <path d="M2 7L12 12L22 7" stroke="#38bdf8" stroke-width="1.2"/>
+                <line x1="12" y1="12" x2="12" y2="22" stroke="#38bdf8" stroke-width="1.2"/>
+                <circle cx="12" cy="12" r="2.5" fill="#38bdf8" fill-opacity="0.6"/>
+                <circle cx="2" cy="7" r="1.2" fill="#38bdf8" fill-opacity="0.8"/>
+                <circle cx="22" cy="7" r="1.2" fill="#38bdf8" fill-opacity="0.8"/>
+                <circle cx="12" cy="2" r="1.2" fill="#38bdf8" fill-opacity="0.8"/>
+              </svg>
+            </div>
+            <div><div class="style-name">3D Render</div><div class="style-desc">CGI quality</div></div>
+          </div>
+          <div class="style-card" onclick="selectStyle(this,'oil painting style, artistic, textured')">
+            <div class="style-ico" style="background:linear-gradient(135deg,#2e1a0d,#3a1a0d)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3C16 5 20 9 20 13C20 17 16.5 20 12 20C7.5 20 4 17 4 13C4 9 8 5 12 3Z" fill="rgba(251,146,60,0.08)" stroke="#fb923c" stroke-width="1.2"/>
+                <path d="M12 3C10 7 8 10 9 14C10 17 12 18 12 18C12 18 14 17 15 14C16 10 14 7 12 3Z" fill="rgba(251,146,60,0.25)"/>
+                <circle cx="8.5" cy="11" r="1.8" fill="#fb923c" fill-opacity="0.7"/>
+                <circle cx="15.5" cy="11" r="1.8" fill="#fb923c" fill-opacity="0.7"/>
+                <path d="M9 15.5Q12 17 15 15.5" stroke="#fb923c" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div><div class="style-name">Artistic</div><div class="style-desc">Abstract art</div></div>
           </div>
         </div>
       </div>
 
-      <!-- Aspect Ratio -->
+      <!-- DURATION -->
       <div>
-        <div class="section-label">📐 Aspect Ratio</div>
-        <div class="aspect-grid">
-          <button class="aspect-btn active" onclick="selectAspect(this, '16:9')">
-            <div class="aspect-visual" style="width:28px;height:16px;"></div>
-            16:9
-          </button>
-          <button class="aspect-btn" onclick="selectAspect(this, '9:16')">
-            <div class="aspect-visual" style="width:14px;height:25px;"></div>
-            9:16
-          </button>
-          <button class="aspect-btn" onclick="selectAspect(this, '1:1')">
-            <div class="aspect-visual" style="width:20px;height:20px;"></div>
-            1:1
-          </button>
-          <button class="aspect-btn" onclick="selectAspect(this, '4:3')">
-            <div class="aspect-visual" style="width:24px;height:18px;"></div>
-            4:3
-          </button>
+        <div class="section-label">
+          <span class="section-dot"></span>
+          <span>Duration</span>
+          <span class="section-line"></span>
+        </div>
+        <div class="dur-header">
+          <div><span class="dur-val" id="durVal">5</span><span class="dur-unit"> seconds</span></div>
+          <span style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace">2s – 10s</span>
+        </div>
+        <input type="range" class="custom-slider" id="durationSlider" min="2" max="10" step="1" value="5" oninput="updateDuration(this)">
+        <div class="slider-ticks">
+          <span class="slider-tick">2s</span>
+          <span class="slider-tick">4s</span>
+          <span class="slider-tick">6s</span>
+          <span class="slider-tick">8s</span>
+          <span class="slider-tick">10s</span>
         </div>
       </div>
 
-      <!-- Model -->
+      <!-- ASPECT RATIO -->
       <div>
-        <div class="section-label">🤖 Model</div>
+        <div class="section-label">
+          <span class="section-dot"></span>
+          <span>Aspect Ratio</span>
+          <span class="section-line"></span>
+        </div>
+        <div class="ratio-grid">
+          <div class="ratio-btn active" onclick="selectAspect(this,'16:9')">
+            <div class="ratio-vis" style="width:30px;height:18px"></div>
+            <span class="ratio-label">16:9</span>
+          </div>
+          <div class="ratio-btn" onclick="selectAspect(this,'9:16')">
+            <div class="ratio-vis" style="width:18px;height:30px"></div>
+            <span class="ratio-label">9:16</span>
+          </div>
+          <div class="ratio-btn" onclick="selectAspect(this,'1:1')">
+            <div class="ratio-vis" style="width:24px;height:24px"></div>
+            <span class="ratio-label">1:1</span>
+          </div>
+          <div class="ratio-btn" onclick="selectAspect(this,'4:3')">
+            <div class="ratio-vis" style="width:28px;height:21px"></div>
+            <span class="ratio-label">4:3</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODEL -->
+      <div>
+        <div class="section-label">
+          <span class="section-dot"></span>
+          <span>AI Model</span>
+          <span class="section-line"></span>
+        </div>
         <select class="model-select" id="modelSelect">
-          <option value="seedance">seedance (recommended)</option>
-          <option value="wan-i2v">wan-i2v</option>
-          <option value="hunyuan">hunyuan</option>
-          <option value="kling">kling</option>
+          <option value="seedance">🔮 seedance (recommended)</option>
+          <option value="wan-i2v">⚡ wan-i2v</option>
+          <option value="hunyuan">🌌 hunyuan</option>
+          <option value="kling">🎬 kling</option>
         </select>
       </div>
 
-      <!-- Audio toggle -->
-      <div class="toggle-row" onclick="toggleAudio(this)">
-        <div class="toggle-info">
-          <span class="toggle-icon">🎵</span>
+      <!-- AUDIO -->
+      <div class="audio-row" onclick="toggleAudio()">
+        <div class="audio-left">
+          <div class="audio-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </div>
           <div>
-            <div class="toggle-label">Background Audio</div>
-            <div class="toggle-desc">AI soundtrack (agar model support kare)</div>
+            <div class="audio-name">Background Audio</div>
+            <div class="audio-sub">AI soundtrack (agar model support kare)</div>
           </div>
         </div>
-        <div class="toggle-switch" id="audioToggle"></div>
+        <button class="toggle" id="audioToggle" onclick="event.stopPropagation();toggleAudio()"></button>
       </div>
 
-      <!-- Free mode info -->
-      <div class="free-section">
-        <div class="notice info">
-          💡 <strong>Free Mode:</strong> Sirf English keywords likho (2–6 words) ya khali chhod do — upar wala prompt se auto words ban jayenge.
-        </div>
+      <!-- FREE NOTICE -->
+      <div class="notice info">
+        💡 <strong>Free Mode:</strong> Sirf English keywords likho (2–6 words) ya khali chhod do — upar wala prompt se auto words ban jayenge.
       </div>
 
-      <!-- Generate -->
+      <!-- GENERATE -->
       <button class="generate-btn" id="generateBtn" onclick="generateVideo()">
         <div class="btn-shimmer"></div>
-        <span>🎬</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <polygon points="5 3 19 12 5 21" fill="white"/>
+        </svg>
         <span>Generate Video</span>
       </button>
 
-      <!-- Download -->
+      <!-- DOWNLOAD -->
       <button class="download-btn" id="downloadBtn" disabled onclick="downloadVideo()">
-        ⬇️ Download MP4
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download MP4
       </button>
-
     </div>
 
-    <!-- Right Panel -->
+    <!-- RIGHT PANEL -->
     <div class="right-panel">
       <div class="output-header">
         <span>⚡ Output</span>
         <div class="output-actions">
-          <button class="action-btn" id="regenBtn" disabled onclick="generateVideo()">↺ Regenerate</button>
-          <button class="action-btn" id="copyUrlBtn" disabled>🔗 Copy URL</button>
+          <button class="action-btn" id="regenBtn" disabled onclick="generateVideo()">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            Regenerate
+          </button>
+          <button class="action-btn" id="copyUrlBtn" disabled>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            Copy URL
+          </button>
         </div>
       </div>
 
       <div class="output-area">
-        <!-- Empty state -->
+        <div class="output-bg"></div>
+
+        <!-- EMPTY STATE -->
         <div class="empty-state" id="emptyState">
-          <div class="empty-icon">🎬</div>
+          <svg class="clapper-3d" width="88" height="88" viewBox="0 0 88 88" fill="none">
+            <defs>
+              <linearGradient id="cg1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#1e1e38"/>
+                <stop offset="100%" stop-color="#12122a"/>
+              </linearGradient>
+              <linearGradient id="cg2" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#7c4dff"/>
+                <stop offset="100%" stop-color="#3d5afe"/>
+              </linearGradient>
+            </defs>
+            <rect x="9" y="27" width="70" height="52" rx="7" fill="url(#cg1)" stroke="rgba(124,77,255,0.4)" stroke-width="1.5"/>
+            <rect x="11" y="14" width="66" height="18" rx="4" fill="#16163a" stroke="rgba(124,77,255,0.25)" stroke-width="1"/>
+            <rect x="11" y="14" width="9" height="18" rx="2" fill="url(#cg2)" fill-opacity="0.9"/>
+            <rect x="26" y="14" width="9" height="18" rx="2" fill="url(#cg2)" fill-opacity="0.5"/>
+            <rect x="41" y="14" width="9" height="18" rx="2" fill="url(#cg2)" fill-opacity="0.9"/>
+            <rect x="56" y="14" width="9" height="18" rx="2" fill="url(#cg2)" fill-opacity="0.5"/>
+            <rect x="71" y="14" width="6" height="18" rx="2" fill="url(#cg2)" fill-opacity="0.9"/>
+            <circle cx="44" cy="53" r="15" fill="rgba(124,77,255,0.1)" stroke="rgba(124,77,255,0.4)" stroke-width="1.5"/>
+            <polygon points="39,46 39,60 53,53" fill="#7c4dff" fill-opacity="0.95"/>
+            <circle cx="60" cy="37" r="4.5" fill="rgba(239,68,68,0.3)" stroke="#ef4444" stroke-width="1.2"/>
+            <circle cx="60" cy="37" r="2" fill="#ef4444" fill-opacity="0.9"/>
+            <rect x="17" y="67" width="18" height="3" rx="1.5" fill="rgba(255,255,255,0.1)"/>
+            <rect x="17" y="73" width="12" height="2" rx="1" fill="rgba(255,255,255,0.06)"/>
+          </svg>
           <div class="empty-title">Ready to Create</div>
           <div class="empty-sub">Prompt likho aur Generate dabao.<br>20–60 seconds mein video tayar hogi.</div>
         </div>
 
-        <!-- Generating -->
+        <!-- GENERATING -->
         <div class="generating-state" id="generatingState">
-          <div class="gen-ring"></div>
-          <div class="gen-title">Generating Video...</div>
+          <div class="gen-orb" id="genOrb">🎬</div>
+          <div class="gen-title" id="genTitle">Video Generate Ho Rahi Hai...</div>
           <div class="gen-progress-bar">
             <div class="gen-progress-fill" id="progressFill"></div>
           </div>
           <div class="gen-status" id="genStatus">AI model initialize ho raha hai...</div>
+          <div class="gen-dots">
+            <div class="gen-dot cur" id="gd0"></div>
+            <div class="gen-dot" id="gd1"></div>
+            <div class="gen-dot" id="gd2"></div>
+            <div class="gen-dot" id="gd3"></div>
+            <div class="gen-dot" id="gd4"></div>
+          </div>
         </div>
 
-        <!-- Video result -->
+        <!-- VIDEO RESULT -->
         <div class="video-result" id="videoResult">
           <div class="video-wrap" id="videoWrap">
             <video id="outputVideo" controls playsinline></video>
+          </div>
+          <div class="video-actions">
+            <button class="v-btn pri" onclick="document.getElementById('outputVideo').play()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg>
+              Preview
+            </button>
+            <button class="v-btn" onclick="downloadVideo()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download
+            </button>
+            <button class="v-btn" onclick="generateVideo()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+              Regenerate
+            </button>
           </div>
         </div>
       </div>
@@ -832,7 +837,6 @@
         <span id="statusText">Tayyar hai — prompt likho aur generate karo</span>
       </div>
     </div>
-
   </div>
 </main>
 
@@ -840,17 +844,11 @@
 // Stars
 (function(){
   const s = document.getElementById('stars');
-  for(let i=0;i<80;i++){
+  for(let i=0;i<70;i++){
     const d = document.createElement('div');
     d.className = 'star';
-    const size = Math.random()*2+0.5;
-    d.style.cssText = `
-      width:${size}px;height:${size}px;
-      left:${Math.random()*100}%;top:${Math.random()*100}%;
-      --dur:${Math.random()*4+2}s;
-      --op:${Math.random()*0.6+0.1};
-      animation-delay:${Math.random()*5}s;
-    `;
+    const sz = Math.random()*1.8+0.4;
+    d.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--dur:${Math.random()*4+2}s;--op:${Math.random()*0.5+0.1};animation-delay:${Math.random()*5}s;`;
     s.appendChild(d);
   }
 })();
@@ -868,25 +866,35 @@ function updateDuration(el) {
   const v = el.value;
   document.getElementById('durVal').textContent = v;
   const pct = ((v-2)/(10-2))*100;
-  el.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${pct}%, var(--surface2) ${pct}%)`;
+  el.style.background = `linear-gradient(90deg, var(--accent) ${pct}%, var(--surface3) ${pct}%)`;
 }
 
-function selectStyle(btn, style) {
-  document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function selectStyle(el, style) {
+  document.querySelectorAll('.style-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
   selectedStyle = style;
 }
 
-function selectAspect(btn, ratio) {
-  document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function selectAspect(el, ratio) {
+  document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
   selectedAspect = ratio;
 }
 
-function toggleAudio(row) {
+function toggleAudio() {
   audioOn = !audioOn;
-  const sw = document.getElementById('audioToggle');
-  sw.classList.toggle('on', audioOn);
+  const t = document.getElementById('audioToggle');
+  t.classList.toggle('on', audioOn);
+}
+
+function enhancePrompt() {
+  const p = document.getElementById('promptInput').value.trim();
+  if (!p) {
+    document.getElementById('promptInput').value = 'slow drone shot over futuristic city at sunset, cinematic, 4K';
+  } else {
+    document.getElementById('promptInput').value = p + ', cinematic lighting, 4K ultra HD, smooth camera motion';
+  }
+  updateChar(document.getElementById('promptInput'));
 }
 
 const statusMessages = [
@@ -896,13 +904,14 @@ const statusMessages = [
   'Rendering aur optimize kar raha hai...',
   'Almost done — final touches...',
 ];
+const genEmojis = ['🔮','🎨','🎬','✨','🎉'];
 
 async function generateVideo() {
   const prompt = document.getElementById('promptInput').value.trim();
   if (!prompt) {
     document.getElementById('promptInput').style.borderColor = 'var(--red)';
     document.getElementById('promptInput').focus();
-    setTimeout(()=>{ document.getElementById('promptInput').style.borderColor = ''; }, 2000);
+    setTimeout(() => { document.getElementById('promptInput').style.borderColor = ''; }, 2000);
     return;
   }
 
@@ -910,28 +919,36 @@ async function generateVideo() {
   const duration = document.getElementById('durationSlider').value;
   const model = document.getElementById('modelSelect').value;
 
-  // UI state
+  // UI reset
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('videoResult').style.display = 'none';
   document.getElementById('generatingState').style.display = 'flex';
   document.getElementById('generateBtn').disabled = true;
   document.getElementById('regenBtn').disabled = true;
+  document.getElementById('regenBtnTop').disabled = true;
   document.getElementById('downloadBtn').disabled = true;
   document.getElementById('copyUrlBtn').disabled = true;
+  document.getElementById('copyUrlBtnTop').disabled = true;
   document.getElementById('statusText').textContent = 'Video generate ho rahi hai...';
 
-  // Progress animation
-  let prog = 0;
-  let msgIdx = 0;
+  let prog = 0, msgIdx = 0;
   const fill = document.getElementById('progressFill');
   const statusEl = document.getElementById('genStatus');
 
   const interval = setInterval(() => {
     prog = Math.min(prog + Math.random()*3, 90);
     fill.style.width = prog + '%';
-    if (msgIdx < statusMessages.length - 1 && prog > (msgIdx+1)*18) {
-      msgIdx++;
+    const newIdx = Math.min(Math.floor(prog / 18), 4);
+    if (newIdx !== msgIdx) {
+      msgIdx = newIdx;
       statusEl.textContent = statusMessages[msgIdx];
+      document.getElementById('genOrb').textContent = genEmojis[msgIdx];
+      for(let i=0;i<5;i++){
+        const d = document.getElementById('gd'+i);
+        if(i < msgIdx) { d.className='gen-dot done'; }
+        else if(i === msgIdx) { d.className='gen-dot cur'; }
+        else { d.className='gen-dot'; }
+      }
     }
   }, 500);
 
@@ -939,37 +956,40 @@ async function generateVideo() {
     const encodedPrompt = encodeURIComponent(fullPrompt);
     const videoUrl = `https://videos.pollinations.ai/${encodedPrompt}?model=${model}&duration=${duration}&ratio=${encodeURIComponent(selectedAspect)}&nologo=true`;
 
-    // Try to fetch with timeout
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000);
-
     const res = await fetch(videoUrl, { signal: controller.signal });
     clearTimeout(timeout);
-
     clearInterval(interval);
-    fill.style.width = '100%';
-    statusEl.textContent = 'Video ready!';
 
+    fill.style.width = '100%';
+    statusEl.textContent = 'Video ready! 🎉';
     await new Promise(r => setTimeout(r, 400));
 
     if (res.ok) {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       currentVideoUrl = url;
-
       document.getElementById('outputVideo').src = url;
+
       document.getElementById('generatingState').style.display = 'none';
       document.getElementById('videoResult').style.display = 'flex';
       document.getElementById('downloadBtn').disabled = false;
       document.getElementById('regenBtn').disabled = false;
+      document.getElementById('regenBtnTop').disabled = false;
       document.getElementById('copyUrlBtn').disabled = false;
+      document.getElementById('copyUrlBtnTop').disabled = false;
       document.getElementById('statusText').textContent = '✅ Video successfully generate ho gayi!';
 
-      document.getElementById('copyUrlBtn').onclick = () => {
-        navigator.clipboard.writeText(videoUrl);
-        document.getElementById('copyUrlBtn').textContent = '✅ Copied!';
-        setTimeout(() => { document.getElementById('copyUrlBtn').innerHTML = '🔗 Copy URL'; }, 2000);
+      const setupCopy = (id) => {
+        document.getElementById(id).onclick = () => {
+          navigator.clipboard.writeText(videoUrl);
+          document.getElementById(id).textContent = '✅ Copied!';
+          setTimeout(() => { document.getElementById(id).innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copy URL'; }, 2000);
+        };
       };
+      setupCopy('copyUrlBtn');
+      setupCopy('copyUrlBtnTop');
     } else {
       throw new Error('API error: ' + res.status);
     }
